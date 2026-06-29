@@ -1,6 +1,8 @@
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
+from urllib.parse import urlencode
+from urllib.request import urlopen
 import json
 import os
 import re
@@ -29,6 +31,33 @@ def google_client_id():
     if GOOGLE_CLIENT_ID_FILE.exists():
         return GOOGLE_CLIENT_ID_FILE.read_text(encoding="utf-8").strip()
     return ""
+
+
+def verify_google_credential(credential):
+    client_id = google_client_id()
+    if not client_id:
+        return None, "Google Client ID is not configured"
+    if not isinstance(credential, str) or credential.count(".") != 2:
+        return None, "Invalid Google credential"
+
+    body = urlencode({"id_token": credential}).encode("utf-8")
+    try:
+        with urlopen("https://oauth2.googleapis.com/tokeninfo", data=body, timeout=10) as response:
+            profile = json.loads(response.read().decode("utf-8"))
+    except Exception:
+        return None, "Google credential could not be verified"
+
+    if profile.get("aud") != client_id:
+        return None, "Google credential audience does not match this site"
+    if str(profile.get("email_verified", "")).lower() != "true":
+        return None, "Google email is not verified"
+
+    return {
+        "name": str(profile.get("name") or "").strip()[:80],
+        "email": str(profile.get("email") or "").strip()[:120],
+        "picture": str(profile.get("picture") or "").strip()[:300],
+        "googleSub": str(profile.get("sub") or "").strip()[:80],
+    }, None
 
 
 def room_file(room_code):
@@ -287,6 +316,18 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         path = urlparse(self.path).path
+
+        if path == "/api/google-login":
+            payload = read_json(self)
+            if payload is None:
+                json_response(self, 400, {"error": "Invalid JSON"})
+                return
+            teacher, error = verify_google_credential(payload.get("credential"))
+            if error:
+                json_response(self, 401, {"error": error})
+                return
+            json_response(self, 200, {"teacher": teacher})
+            return
 
         room_code = parse_room_path(path)
         if room_code:
