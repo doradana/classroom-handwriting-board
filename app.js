@@ -614,18 +614,30 @@ async function loadGoogleClientId() {
   }
 }
 
+async function waitForGoogleIdentity() {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    if (window.google?.accounts?.id) return true;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+  return false;
+}
+
 async function setupGoogleSignIn() {
   googleClientId = await loadGoogleClientId();
-  if (!googleClientId || !window.google?.accounts?.id) return;
+  if (!googleClientId || !(await waitForGoogleIdentity())) return;
   window.google.accounts.id.initialize({
     client_id: googleClientId,
-    callback: (response) => {
-      const profile = decodeJwtPayload(response.credential);
-      saveTeacherProfile({
-        name: profile.name || "",
-        email: profile.email || "",
-        picture: profile.picture || "",
-      });
+    callback: async (response) => {
+      try {
+        const login = await apiRequest("/api/google-login", {
+          method: "POST",
+          body: JSON.stringify({ credential: response.credential }),
+        });
+        saveTeacherProfile(login.teacher || {});
+        roomMessage.textContent = "";
+      } catch {
+        roomMessage.textContent = t("googleUnavailable");
+      }
     },
   });
 }
