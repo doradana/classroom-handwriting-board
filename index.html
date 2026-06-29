@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="google-signin-client_id" content="" />
+    <title>中文手寫房間公佈欄</title>
+    <link rel="stylesheet" href="./styles.css?v=20260629-teacher-can-create" />
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="workspace" aria-label="中文手寫房間公佈欄">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow" data-i18n="eyebrow">課堂手寫練習</p>
+            <h1 data-i18n="appTitle">中文手寫房間公佈欄</h1>
+          </div>
+          <div class="top-status">
+            <label class="language-select">
+              <span data-i18n="languageLabel">介面語言</span>
+              <select id="languageSelect" aria-label="介面語言">
+                <option value="zh-Hans">中文简体</option>
+                <option value="zh-Hant">中文繁體</option>
+                <option value="en">English</option>
+                <option value="ja">日本語</option>
+                <option value="vi">Tiếng Việt</option>
+              </select>
+            </label>
+          </div>
+        </header>
+
+        <section class="join-panel" id="joinPanel" aria-label="進入房間">
+          <div class="join-copy">
+            <p class="eyebrow" data-i18n="roomPassword">房間密碼</p>
+            <h2 data-i18n="joinHeadline">老師設定數字，學生輸入後一起進入同一個公佈欄</h2>
+          </div>
+
+          <form id="roomForm" class="room-form" novalidate>
+            <div class="role-toggle" aria-label="選擇身份">
+              <label>
+                <input type="radio" name="role" value="teacher" checked />
+                <span data-i18n="teacher">老師</span>
+              </label>
+              <label>
+                <input type="radio" name="role" value="student" />
+                <span data-i18n="student">學生</span>
+              </label>
+            </div>
+
+            <section class="teacher-login-card" id="teacherLoginCard">
+              <button type="button" id="googleLoginButton" class="quiet-button" data-i18n="googleLogin">使用 Google 登入</button>
+              <input id="teacherName" type="hidden" />
+              <input id="teacherEmail" type="hidden" />
+              <p id="teacherStatusText" hidden></p>
+            </section>
+
+            <label>
+              <span data-i18n="roomCodeLabel">房間數字密碼</span>
+              <input id="roomCode" inputmode="numeric" pattern="[0-9]{4,8}" maxlength="8" data-i18n-placeholder="roomCodePlaceholder" placeholder="例如：2468" required />
+            </label>
+            <button type="submit" class="primary-action" data-i18n="enterRoom">進入房間</button>
+            <p class="form-note" data-i18n="roomNote">老師先設定 4 到 8 位數字；學生輸入同一組數字，就會看到同一個公佈欄。</p>
+            <p class="form-message" id="roomMessage" aria-live="polite"></p>
+          </form>
+        </section>
+
+        <div class="layout" id="classroomLayout" hidden>
+          <section class="writer-panel" aria-label="學生手寫板">
+            <section class="course-panel" id="coursePanel">
+              <div>
+                <p class="eyebrow" data-i18n="courseFolder">課程資料夾</p>
+                <h2 id="activeCourseName" data-i18n="defaultCourse">預設課程</h2>
+              </div>
+              <div class="course-controls">
+                <label>
+                  <span data-i18n="selectCourse">選擇課程</span>
+                  <select id="courseSelect"></select>
+                </label>
+                <form id="courseForm" class="course-form">
+                  <label>
+                    <span data-i18n="newCourseName">新增課程資料夾</span>
+                    <input id="courseNameInput" maxlength="40" data-i18n-placeholder="newCoursePlaceholder" placeholder="例如：三年級第一課" />
+                  </label>
+                  <button type="submit" class="quiet-button" data-i18n="addCourse">新增</button>
+                </form>
+              </div>
+            </section>
+
+            <form id="postForm" class="student-form">
+              <label>
+                <span data-i18n="studentName">學生姓名</span>
+                <input id="studentName" autocomplete="name" maxlength="18" data-i18n-placeholder="studentNamePlaceholder" placeholder="例如：小明" required />
+              </label>
+              <label>
+                <span data-i18n="practiceTopic">練習主題</span>
+                <input id="promptText" maxlength="32" data-i18n-placeholder="promptPlaceholder" placeholder="例如：今天的句子" />
+              </label>
+            </form>
+
+            <div class="canvas-card">
+              <div class="canvas-toolbar" aria-label="手寫工具">
+                <button type="button" class="tool-button active" data-mode="draw" data-i18n-title="drawTitle" title="寫字" data-i18n="pen">筆</button>
+                <button type="button" class="tool-button" data-mode="erase" data-i18n-title="eraseTitle" title="橡皮擦" data-i18n="eraser">擦</button>
+                <label class="range-control" data-i18n-title="brushTitle" title="筆畫粗細">
+                  <span data-i18n="brushSize">粗細</span>
+                  <input id="brushSize" type="range" min="3" max="26" value="10" />
+                </label>
+                <label class="color-control" data-i18n-title="inkTitle" title="墨水顏色">
+                  <span data-i18n="inkColor">墨色</span>
+                  <input id="inkColor" type="color" value="#111827" />
+                </label>
+                <button type="button" id="undoButton" class="tool-button" data-i18n-title="undoTitle" title="復原">↶</button>
+                <button type="button" id="clearButton" class="tool-button danger" data-i18n-title="clearTitle" title="清空" data-i18n="clearShort">清</button>
+              </div>
+
+              <div class="canvas-wrap">
+                <canvas id="writingCanvas" data-i18n-aria-label="canvasLabel" aria-label="請在這裡手寫中文"></canvas>
+                <div class="paper-lines" aria-hidden="true"></div>
+              </div>
+
+              <div class="actions">
+                <button type="button" id="submitButton" class="primary-action" data-i18n="submitPost">送到公佈欄</button>
+                <p id="helperText">請先進入房間，再開始書寫。</p>
+              </div>
+            </div>
+          </section>
+
+          <aside class="board-panel" aria-label="公佈欄">
+            <div class="board-head">
+              <div>
+                <p class="eyebrow" id="boardCourseLabel" data-i18n="sameRoomVisible">同房間可見</p>
+                <h2 data-i18n="boardTitle">公佈欄</h2>
+              </div>
+              <div class="board-actions">
+                <button type="button" id="fullscreenBoardButton" class="icon-button" title="放大公佈欄" aria-label="放大公佈欄" aria-pressed="false">⛶</button>
+                <button type="button" id="switchRoomButton" class="quiet-button" data-i18n="switchRoom">換房間</button>
+                <button type="button" id="endCourseButton" class="quiet-button">結束課程並產生新密碼</button>
+                <button type="button" id="clearBoardButton" class="quiet-button" data-i18n="clearBoard">清空公佈欄</button>
+              </div>
+            </div>
+
+            <div class="filter-row" role="search">
+              <input id="searchInput" data-i18n-placeholder="searchPlaceholder" placeholder="搜尋姓名或主題" data-i18n-aria-label="searchLabel" aria-label="搜尋作品" />
+              <select id="sortSelect" data-i18n-aria-label="sortLabel" aria-label="排序">
+                <option value="newest" data-i18n="sortNewest">最新</option>
+                <option value="oldest" data-i18n="sortOldest">最舊</option>
+                <option value="name" data-i18n="sortName">姓名</option>
+              </select>
+            </div>
+
+            <div id="boardList" class="board-list" aria-live="polite"></div>
+            <template id="emptyTemplate">
+              <div class="empty-state">
+                <strong data-i18n="emptyTitle">這個課程還沒有作品</strong>
+                <span data-i18n="emptyText">學生送出手寫作品後，會出現在這裡。</span>
+              </div>
+            </template>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <script src="./app.js?v=20260629-teacher-can-create"></script>
+  </body>
+</html>
