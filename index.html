@@ -3,10 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="google-signin-client_id" content="" />
     <title>中文手寫房間公佈欄</title>
-    <link rel="stylesheet" href="./styles.css?v=20260629-google-oauth" />
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <link rel="stylesheet" href="./styles.css?v=20260630-teacher-accounts" />
   </head>
   <body>
     <main class="app-shell">
@@ -49,10 +47,32 @@
             </div>
 
             <section class="teacher-login-card" id="teacherLoginCard">
-              <button type="button" id="googleLoginButton" class="quiet-button" data-i18n="googleLogin">使用 Google 登入</button>
-              <input id="teacherName" type="hidden" />
-              <input id="teacherEmail" type="hidden" />
-              <p id="teacherStatusText" hidden></p>
+              <div class="login-head">
+                <div>
+                  <p class="mini-title" data-i18n="teacherLoginTitle">老師帳號</p>
+                  <p id="teacherStatusText" data-i18n="teacherNotSignedIn">尚未登入</p>
+                </div>
+                <button type="button" id="teacherLogoutButton" class="quiet-button" data-i18n="logoutTeacher" hidden>登出</button>
+              </div>
+              <div class="teacher-fields" id="teacherFields">
+                <label>
+                  <span data-i18n="teacherNameLabel">老師姓名</span>
+                  <input id="teacherName" autocomplete="name" maxlength="40" data-i18n-placeholder="teacherNamePlaceholder" placeholder="例如：王老師" />
+                </label>
+                <label>
+                  <span data-i18n="teacherUsernameLabel">帳號</span>
+                  <input id="teacherUsername" autocomplete="username" maxlength="60" data-i18n-placeholder="teacherUsernamePlaceholder" placeholder="例如：teacher01" />
+                </label>
+                <label>
+                  <span data-i18n="teacherPasswordLabel">密碼</span>
+                  <input id="teacherPassword" type="password" autocomplete="current-password" maxlength="80" data-i18n-placeholder="teacherPasswordPlaceholder" placeholder="至少 6 個字" />
+                </label>
+                <div class="teacher-auth-actions">
+                  <button type="button" id="teacherLoginButton" class="quiet-button" data-i18n="loginTeacher">登入</button>
+                  <button type="button" id="teacherRegisterButton" class="quiet-button" data-i18n="registerTeacher">建立帳號</button>
+                </div>
+              </div>
+              <div id="teacherHistory" class="teacher-history" hidden></div>
             </section>
 
             <label>
@@ -161,6 +181,6 @@
       </section>
     </main>
 
-    <script src="./app.js?v=20260629-google-oauth"></script>
+    <script src="./app.js?v=20260630-teacher-accounts"></script>
   </body>
 </html>

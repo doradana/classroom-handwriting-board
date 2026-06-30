@@ -1,11 +1,13 @@
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
-from urllib.parse import urlencode
-from urllib.request import urlopen
+import base64
+import hashlib
+import hmac
 import json
 import os
 import re
+import secrets
 import sys
 import uuid
 from datetime import datetime, timezone
@@ -13,10 +15,12 @@ from datetime import datetime, timezone
 
 ROOT = Path(__file__).resolve().parent
 DATA_DIR = ROOT / "data" / "rooms"
-GOOGLE_CLIENT_ID_FILE = ROOT / "google-client-id.txt"
+TEACHERS_FILE = ROOT / "data" / "teachers.json"
+SESSION_SECRET_FILE = ROOT / "data" / "session-secret.txt"
 MAX_BODY_BYTES = 4 * 1024 * 1024
 ROOM_RE = re.compile(r"^[0-9]{4,8}$")
 COURSE_RE = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
+USERNAME_RE = re.compile(r"^[A-Za-z0-9_.@-]{3,60}$")
 DEFAULT_COURSE_ID = "default"
 
 
@@ -24,40 +28,119 @@ def now_iso():
     return datetime.now(timezone.utc).isoformat()
 
 
-def google_client_id():
-    env_value = os.environ.get("GOOGLE_CLIENT_ID", "").strip()
-    if env_value:
-        return env_value
-    if GOOGLE_CLIENT_ID_FILE.exists():
-        return GOOGLE_CLIENT_ID_FILE.read_text(encoding="utf-8").strip()
-    return ""
-
-
-def verify_google_credential(credential):
-    client_id = google_client_id()
-    if not client_id:
-        return None, "Google Client ID is not configured"
-    if not isinstance(credential, str) or credential.count(".") != 2:
-        return None, "Invalid Google credential"
-
-    body = urlencode({"id_token": credential}).encode("utf-8")
+def load_teachers():
     try:
-        with urlopen("https://oauth2.googleapis.com/tokeninfo", data=body, timeout=10) as response:
-            profile = json.loads(response.read().decode("utf-8"))
-    except Exception:
-        return None, "Google credential could not be verified"
+        data = json.loads(TEACHERS_FILE.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        data = {"teachers": []}
+    if not isinstance(data, dict) or not isinstance(data.get("teachers"), list):
+        return {"teachers": []}
+    return data
 
-    if profile.get("aud") != client_id:
-        return None, "Google credential audience does not match this site"
-    if str(profile.get("email_verified", "")).lower() != "true":
-        return None, "Google email is not verified"
 
+def save_teachers(data):
+    TEACHERS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    temp_file = TEACHERS_FILE.with_suffix(".tmp")
+    temp_file.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    temp_file.replace(TEACHERS_FILE)
+
+
+def session_secret():
+    SESSION_SECRET_FILE.parent.mkdir(parents=True, exist_ok=True)
+    if SESSION_SECRET_FILE.exists():
+        secret = SESSION_SECRET_FILE.read_text(encoding="utf-8").strip()
+        if secret:
+            return secret
+    secret = secrets.token_hex(32)
+    SESSION_SECRET_FILE.write_text(secret, encoding="utf-8")
+    return secret
+
+
+def password_hash(password, salt=None):
+    salt = salt or secrets.token_hex(16)
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), 180000)
+    return salt, digest.hex()
+
+
+def public_teacher(teacher):
     return {
-        "name": str(profile.get("name") or "").strip()[:80],
-        "email": str(profile.get("email") or "").strip()[:120],
-        "picture": str(profile.get("picture") or "").strip()[:300],
-        "googleSub": str(profile.get("sub") or "").strip()[:80],
-    }, None
+        "id": teacher.get("id", ""),
+        "name": teacher.get("name", ""),
+        "username": teacher.get("username", ""),
+    }
+
+
+def find_teacher(username):
+    username = str(username or "").strip().lower()
+    for teacher in load_teachers()["teachers"]:
+        if str(teacher.get("username", "")).lower() == username:
+            return teacher
+    return None
+
+
+def create_teacher(payload):
+    username = str(payload.get("username", "")).strip().lower()
+    name = str(payload.get("name", "")).strip()[:40]
+    password = str(payload.get("password", ""))
+    if not USERNAME_RE.match(username):
+        return None, "Username must be 3 to 60 letters, numbers, or email symbols"
+    if len(password) < 6:
+        return None, "Password must be at least 6 characters"
+    data = load_teachers()
+    if any(str(teacher.get("username", "")).lower() == username for teacher in data["teachers"]):
+        return None, "This account already exists"
+    salt, digest = password_hash(password)
+    teacher = {
+        "id": uuid.uuid4().hex,
+        "username": username,
+        "name": name or username,
+        "salt": salt,
+        "passwordHash": digest,
+        "createdAt": now_iso(),
+    }
+    data["teachers"].append(teacher)
+    save_teachers(data)
+    return teacher, None
+
+
+def login_teacher(payload):
+    teacher = find_teacher(payload.get("username"))
+    password = str(payload.get("password", ""))
+    if not teacher or not password:
+        return None, "Invalid account or password"
+    _, digest = password_hash(password, teacher.get("salt", ""))
+    if not hmac.compare_digest(digest, teacher.get("passwordHash", "")):
+        return None, "Invalid account or password"
+    return teacher, None
+
+
+def issue_session(teacher):
+    teacher_id = teacher["id"]
+    signature = hmac.new(session_secret().encode("utf-8"), teacher_id.encode("utf-8"), hashlib.sha256).hexdigest()
+    raw = f"{teacher_id}.{signature}".encode("utf-8")
+    return base64.urlsafe_b64encode(raw).decode("utf-8").rstrip("=")
+
+
+def current_teacher(handler):
+    token = handler.headers.get("X-Teacher-Token", "").strip()
+    auth = handler.headers.get("Authorization", "").strip()
+    if not token and auth.lower().startswith("bearer "):
+        token = auth[7:].strip()
+    if not token:
+        return None
+    try:
+        padded = token + "=" * (-len(token) % 4)
+        raw = base64.urlsafe_b64decode(padded.encode("utf-8")).decode("utf-8")
+        teacher_id, signature = raw.split(".", 1)
+    except (ValueError, UnicodeDecodeError):
+        return None
+    expected = hmac.new(session_secret().encode("utf-8"), teacher_id.encode("utf-8"), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(signature, expected):
+        return None
+    for teacher in load_teachers()["teachers"]:
+        if teacher.get("id") == teacher_id:
+            return teacher
+    return None
 
 
 def room_file(room_code):
@@ -83,6 +166,7 @@ def default_room(room_code):
     return {
         "room": room_code,
         "teacher": {},
+        "teacherId": "",
         "courses": [
             {
                 "id": DEFAULT_COURSE_ID,
@@ -109,6 +193,7 @@ def normalize_room(room_code, data):
 
     if not isinstance(room.get("teacher"), dict):
         room["teacher"] = {}
+    room["teacherId"] = str(room.get("teacherId") or "")
     if not isinstance(room.get("courses"), list) or not room["courses"]:
         room["courses"] = default_room(room_code)["courses"]
     if not isinstance(room.get("postsByCourse"), dict):
@@ -190,7 +275,8 @@ def rotate_room_code(room_code):
 def ensure_room(room_code, teacher=None):
     room = load_room(room_code)
     if teacher:
-        room["teacher"] = sanitize_teacher(teacher)
+        room["teacher"] = sanitize_teacher(public_teacher(teacher))
+        room["teacherId"] = teacher.get("id", "")
     save_room(room_code, room)
     return room
 
@@ -261,6 +347,57 @@ def parse_course_posts_path(path):
     return match.groups() if match else None
 
 
+def teacher_history(teacher_id):
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    rooms = []
+    for path in DATA_DIR.glob("*.json"):
+        room_code = path.stem
+        if not ROOM_RE.match(room_code):
+            continue
+        room = load_room(room_code)
+        if room.get("teacherId") != teacher_id:
+            continue
+        courses = room.get("courses", [])
+        total_posts = sum(len(posts) for posts in room.get("postsByCourse", {}).values() if isinstance(posts, list))
+        rooms.append(
+            {
+                "room": room_code,
+                "courses": courses,
+                "activeCourseId": room.get("activeCourseId", DEFAULT_COURSE_ID),
+                "totalPosts": total_posts,
+                "updatedAt": max([course.get("createdAt", "") for course in courses] or [room.get("lastRotatedAt", "")]),
+            }
+        )
+    rooms.sort(key=lambda item: item.get("updatedAt", ""), reverse=True)
+    return rooms
+
+
+def require_teacher(handler):
+    teacher = current_teacher(handler)
+    if not teacher:
+        json_response(handler, 401, {"error": "Teacher login required"})
+        return None
+    return teacher
+
+
+def require_room_owner(handler, room_code):
+    teacher = require_teacher(handler)
+    if not teacher:
+        return None, None
+    if not room_exists(room_code):
+        json_response(handler, 404, {"error": "Room not found"})
+        return None, None
+    room = load_room(room_code)
+    if room.get("teacherId") and room.get("teacherId") != teacher.get("id"):
+        json_response(handler, 403, {"error": "This room belongs to another teacher"})
+        return None, None
+    if not room.get("teacherId"):
+        room["teacherId"] = teacher.get("id", "")
+        room["teacher"] = sanitize_teacher(public_teacher(teacher))
+        save_room(room_code, room)
+    return teacher, room
+
+
 class ClassroomHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(ROOT), **kwargs)
@@ -278,8 +415,18 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
     def do_GET(self):
         path = urlparse(self.path).path
 
-        if path == "/api/google-config":
-            json_response(self, 200, {"clientId": google_client_id()})
+        if path == "/api/teacher/me":
+            teacher = require_teacher(self)
+            if not teacher:
+                return
+            json_response(self, 200, {"teacher": public_teacher(teacher)})
+            return
+
+        if path == "/api/teacher/history":
+            teacher = require_teacher(self)
+            if not teacher:
+                return
+            json_response(self, 200, {"rooms": teacher_history(teacher["id"])})
             return
 
         room_code = parse_room_path(path)
@@ -317,16 +464,19 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
     def do_POST(self):
         path = urlparse(self.path).path
 
-        if path == "/api/google-login":
+        if path in {"/api/teacher/register", "/api/teacher/login"}:
             payload = read_json(self)
             if payload is None:
                 json_response(self, 400, {"error": "Invalid JSON"})
                 return
-            teacher, error = verify_google_credential(payload.get("credential"))
+            if path.endswith("/register"):
+                teacher, error = create_teacher(payload)
+            else:
+                teacher, error = login_teacher(payload)
             if error:
-                json_response(self, 401, {"error": error})
+                json_response(self, 401 if path.endswith("/login") else 400, {"error": error})
                 return
-            json_response(self, 200, {"teacher": teacher})
+            json_response(self, 200, {"token": issue_session(teacher), "teacher": public_teacher(teacher)})
             return
 
         room_code = parse_room_path(path)
@@ -338,29 +488,36 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
             if payload.get("role") != "teacher":
                 json_response(self, 403, {"error": "Only teachers can create rooms"})
                 return
-            room = ensure_room(room_code, payload.get("teacher"))
+            teacher = require_teacher(self)
+            if not teacher:
+                return
+            if room_exists(room_code):
+                existing_room = load_room(room_code)
+                if existing_room.get("teacherId") and existing_room.get("teacherId") != teacher.get("id"):
+                    json_response(self, 403, {"error": "This room belongs to another teacher"})
+                    return
+            room = ensure_room(room_code, teacher)
             json_response(self, 200, room_summary(room))
             return
 
         room_code = parse_rotate_path(path)
         if room_code:
-            room = rotate_room_code(room_code)
-            if room is None:
-                json_response(self, 404, {"error": "Room not found"})
+            teacher, _room = require_room_owner(self, room_code)
+            if not teacher:
                 return
+            room = rotate_room_code(room_code)
             json_response(self, 200, room_summary(room))
             return
 
         room_code = parse_courses_path(path)
         if room_code:
-            if not room_exists(room_code):
-                json_response(self, 404, {"error": "Room not found"})
+            teacher, room = require_room_owner(self, room_code)
+            if not teacher:
                 return
             payload = read_json(self)
             if payload is None:
                 json_response(self, 400, {"error": "Invalid JSON"})
                 return
-            room = load_room(room_code)
             course = {
                 "id": uuid.uuid4().hex[:12],
                 "name": sanitize_course_name(payload.get("name")),
@@ -420,10 +577,9 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
             json_response(self, 404, {"error": "Not found"})
             return
         room_code, course_id = parsed
-        if not room_exists(room_code):
-            json_response(self, 404, {"error": "Room not found"})
+        teacher, room = require_room_owner(self, room_code)
+        if not teacher:
             return
-        room = load_room(room_code)
         if course_id not in room["postsByCourse"]:
             json_response(self, 404, {"error": "Course not found"})
             return

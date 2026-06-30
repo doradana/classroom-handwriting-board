@@ -1,8 +1,8 @@
 const STORAGE_KEY = "classroom-handwriting-room";
 const LANGUAGE_KEY = "classroom-handwriting-language";
 const TEACHER_KEY = "classroom-handwriting-teacher";
+const TEACHER_TOKEN_KEY = "classroom-handwriting-teacher-token";
 const API_BASE = window.location.protocol === "file:" ? "http://127.0.0.1:8030" : "";
-let googleClientId = "";
 
 const TRANSLATIONS = {
   "zh-Hans": {
@@ -17,13 +17,13 @@ const TRANSLATIONS = {
     teacherLoginTitle: "老师账号",
     teacherNotSignedIn: "尚未记录老师资料",
     teacherSignedIn: "已记录：{name}",
-    googleLogin: "使用 Google 登录",
-    googleUnavailable: "Google 登入还没有设定 Client ID。请先在 google-client-id.txt 或服务器环境变量 GOOGLE_CLIENT_ID 放入 Google Client ID。",
+    googleLogin: "登入老师账号",
+    googleUnavailable: "请使用网站老师账号登入。",
     teacherNameLabel: "老师姓名",
     teacherNamePlaceholder: "例如：王老师",
-    teacherEmailLabel: "Google Email",
-    teacherEmailPlaceholder: "teacher@gmail.com",
-    googleNote: "若要启用真正的 Google 登录，发布后请在 HTML 放入 Google Client ID；现在也可以先输入老师资料保存课程。",
+    teacherEmailLabel: "账号",
+    teacherEmailPlaceholder: "teacher01",
+    googleNote: "老师使用网站账号登入后，就能保存自己的课程纪录。",
     roomCodeLabel: "房间数字密码",
     roomCodePlaceholder: "例如：2468",
     enterRoom: "进入房间",
@@ -102,13 +102,13 @@ const TRANSLATIONS = {
     teacherLoginTitle: "老師帳號",
     teacherNotSignedIn: "尚未記錄老師資料",
     teacherSignedIn: "已記錄：{name}",
-    googleLogin: "使用 Google 登入",
-    googleUnavailable: "Google 登入還沒有設定 Client ID。請先在 google-client-id.txt 或伺服器環境變數 GOOGLE_CLIENT_ID 放入 Google Client ID。",
+    googleLogin: "登入老師帳號",
+    googleUnavailable: "請使用網站老師帳號登入。",
     teacherNameLabel: "老師姓名",
     teacherNamePlaceholder: "例如：王老師",
-    teacherEmailLabel: "Google Email",
-    teacherEmailPlaceholder: "teacher@gmail.com",
-    googleNote: "若要啟用真正的 Google 登入，發布後請在 HTML 放入 Google Client ID；現在也可以先輸入老師資料保存課程。",
+    teacherEmailLabel: "帳號",
+    teacherEmailPlaceholder: "teacher01",
+    googleNote: "老師使用網站帳號登入後，就能保存自己的課程紀錄。",
     roomCodeLabel: "房間數字密碼",
     roomCodePlaceholder: "例如：2468",
     enterRoom: "進入房間",
@@ -187,13 +187,13 @@ const TRANSLATIONS = {
     teacherLoginTitle: "Teacher account",
     teacherNotSignedIn: "No teacher saved yet",
     teacherSignedIn: "Saved: {name}",
-    googleLogin: "Sign in with Google",
-    googleUnavailable: "Google sign-in has no Client ID yet. Add your Google Client ID to google-client-id.txt or the GOOGLE_CLIENT_ID server environment variable.",
+    googleLogin: "Sign in to teacher account",
+    googleUnavailable: "Please use the website teacher account.",
     teacherNameLabel: "Teacher name",
     teacherNamePlaceholder: "Example: Ms. Wang",
-    teacherEmailLabel: "Google Email",
-    teacherEmailPlaceholder: "teacher@gmail.com",
-    googleNote: "To enable real Google sign-in, add a Google Client ID in the HTML after publishing. You can still save teacher info now.",
+    teacherEmailLabel: "Account",
+    teacherEmailPlaceholder: "teacher01",
+    googleNote: "Sign in with a website teacher account to save course history.",
     roomCodeLabel: "Numeric room code",
     roomCodePlaceholder: "Example: 2468",
     enterRoom: "Enter room",
@@ -272,13 +272,13 @@ const TRANSLATIONS = {
     teacherLoginTitle: "先生アカウント",
     teacherNotSignedIn: "先生情報は未保存です",
     teacherSignedIn: "保存済み：{name}",
-    googleLogin: "Googleでログイン",
-    googleUnavailable: "Google ログインの Client ID が未設定です。google-client-id.txt またはサーバー環境変数 GOOGLE_CLIENT_ID に Client ID を入れてください。",
+    googleLogin: "先生アカウントでログイン",
+    googleUnavailable: "サイトの先生アカウントを使用してください。",
     teacherNameLabel: "先生名",
     teacherNamePlaceholder: "例：王先生",
-    teacherEmailLabel: "Google Email",
-    teacherEmailPlaceholder: "teacher@gmail.com",
-    googleNote: "正式な Google ログインを使うには、公開後 HTML に Google Client ID を入れてください。今は先生情報を入力して保存できます。",
+    teacherEmailLabel: "アカウント",
+    teacherEmailPlaceholder: "teacher01",
+    googleNote: "サイトの先生アカウントでログインすると授業履歴を保存できます。",
     roomCodeLabel: "数字のルーム番号",
     roomCodePlaceholder: "例：2468",
     enterRoom: "入室",
@@ -357,13 +357,13 @@ const TRANSLATIONS = {
     teacherLoginTitle: "Tài khoản giáo viên",
     teacherNotSignedIn: "Chưa lưu thông tin giáo viên",
     teacherSignedIn: "Đã lưu: {name}",
-    googleLogin: "Đăng nhập Google",
-    googleUnavailable: "Đăng nhập Google chưa có Client ID. Hãy thêm Google Client ID vào google-client-id.txt hoặc biến môi trường GOOGLE_CLIENT_ID của máy chủ.",
+    googleLogin: "Đăng nhập tài khoản giáo viên",
+    googleUnavailable: "Hãy dùng tài khoản giáo viên của trang web.",
     teacherNameLabel: "Tên giáo viên",
     teacherNamePlaceholder: "Ví dụ: Cô Wang",
-    teacherEmailLabel: "Google Email",
-    teacherEmailPlaceholder: "teacher@gmail.com",
-    googleNote: "Để bật đăng nhập Google thật, hãy thêm Google Client ID vào HTML sau khi xuất bản. Bây giờ vẫn có thể lưu thông tin giáo viên.",
+    teacherEmailLabel: "Tài khoản",
+    teacherEmailPlaceholder: "teacher01",
+    googleNote: "Đăng nhập bằng tài khoản giáo viên của trang web để lưu lịch sử lớp học.",
     roomCodeLabel: "Mã phòng bằng số",
     roomCodePlaceholder: "Ví dụ: 2468",
     enterRoom: "Vào phòng",
@@ -436,6 +436,111 @@ const canvas = document.querySelector("#writingCanvas");
 const ctx = canvas.getContext("2d", { willReadFrequently: true });
 const canvasWrap = document.querySelector(".canvas-wrap");
 const form = document.querySelector("#postForm");
+Object.assign(TRANSLATIONS["zh-Hans"], {
+  teacherNotSignedIn: "尚未登入老师账号",
+  teacherSignedIn: "已登入：{name}",
+  teacherUsernameLabel: "账号",
+  teacherUsernamePlaceholder: "例如：teacher01",
+  teacherPasswordLabel: "密码",
+  teacherPasswordPlaceholder: "至少 6 个字",
+  loginTeacher: "登入",
+  registerTeacher: "建立账号",
+  logoutTeacher: "登出",
+  loginRequired: "请先登入老师账号，才能建立房间。",
+  loginSuccess: "老师账号已登入。",
+  registerSuccess: "账号已建立并登入。",
+    loginFailed: "登入失败，请确认账号和密码。",
+    registerFailed: "建立账号失败，账号可能已被使用，或密码少于 6 个字。",
+    teacherSessionExpired: "老师登入已失效，请重新登入后再建立房间。",
+  historyTitle: "历史课程",
+  historyEmpty: "登入后建立的课程会显示在这里。",
+  openHistoryRoom: "进入",
+});
+
+Object.assign(TRANSLATIONS["zh-Hant"], {
+  teacherNotSignedIn: "尚未登入老師帳號",
+  teacherSignedIn: "已登入：{name}",
+  teacherUsernameLabel: "帳號",
+  teacherUsernamePlaceholder: "例如：teacher01",
+  teacherPasswordLabel: "密碼",
+  teacherPasswordPlaceholder: "至少 6 個字",
+  loginTeacher: "登入",
+  registerTeacher: "建立帳號",
+  logoutTeacher: "登出",
+  loginRequired: "請先登入老師帳號，才能建立房間。",
+  loginSuccess: "老師帳號已登入。",
+  registerSuccess: "帳號已建立並登入。",
+    loginFailed: "登入失敗，請確認帳號和密碼。",
+    registerFailed: "建立帳號失敗，帳號可能已被使用，或密碼少於 6 個字。",
+    teacherSessionExpired: "老師登入已失效，請重新登入後再建立房間。",
+  historyTitle: "歷史課程",
+  historyEmpty: "登入後建立的課程會顯示在這裡。",
+  openHistoryRoom: "進入",
+});
+
+Object.assign(TRANSLATIONS.en, {
+  teacherNotSignedIn: "Teacher account is not signed in",
+  teacherSignedIn: "Signed in: {name}",
+  teacherUsernameLabel: "Account",
+  teacherUsernamePlaceholder: "Example: teacher01",
+  teacherPasswordLabel: "Password",
+  teacherPasswordPlaceholder: "At least 6 characters",
+  loginTeacher: "Log in",
+  registerTeacher: "Create account",
+  logoutTeacher: "Log out",
+  loginRequired: "Log in with a teacher account before creating a room.",
+  loginSuccess: "Teacher account signed in.",
+  registerSuccess: "Account created and signed in.",
+  loginFailed: "Login failed. Check the account and password.",
+  registerFailed: "Could not create the account. It may already exist, or the password is too short.",
+  teacherSessionExpired: "Teacher login expired. Please log in again before creating a room.",
+  historyTitle: "Course history",
+  historyEmpty: "Rooms created after login will appear here.",
+  openHistoryRoom: "Open",
+});
+
+Object.assign(TRANSLATIONS.ja, {
+  teacherNotSignedIn: "先生アカウントは未ログインです",
+  teacherSignedIn: "ログイン中：{name}",
+  teacherUsernameLabel: "アカウント",
+  teacherUsernamePlaceholder: "例：teacher01",
+  teacherPasswordLabel: "パスワード",
+  teacherPasswordPlaceholder: "6文字以上",
+  loginTeacher: "ログイン",
+  registerTeacher: "アカウント作成",
+  logoutTeacher: "ログアウト",
+  loginRequired: "部屋を作成する前に先生アカウントでログインしてください。",
+  loginSuccess: "先生アカウントでログインしました。",
+  registerSuccess: "アカウントを作成してログインしました。",
+  loginFailed: "ログインできません。アカウントとパスワードを確認してください。",
+  registerFailed: "アカウントを作成できません。既に使用中、またはパスワードが短すぎます。",
+  teacherSessionExpired: "先生ログインの有効期限が切れました。もう一度ログインしてください。",
+  historyTitle: "授業履歴",
+  historyEmpty: "ログイン後に作成した部屋がここに表示されます。",
+  openHistoryRoom: "開く",
+});
+
+Object.assign(TRANSLATIONS.vi, {
+  teacherNotSignedIn: "Chưa đăng nhập tài khoản giáo viên",
+  teacherSignedIn: "Đã đăng nhập: {name}",
+  teacherUsernameLabel: "Tài khoản",
+  teacherUsernamePlaceholder: "Ví dụ: teacher01",
+  teacherPasswordLabel: "Mật khẩu",
+  teacherPasswordPlaceholder: "Ít nhất 6 ký tự",
+  loginTeacher: "Đăng nhập",
+  registerTeacher: "Tạo tài khoản",
+  logoutTeacher: "Đăng xuất",
+  loginRequired: "Hãy đăng nhập tài khoản giáo viên trước khi tạo phòng.",
+  loginSuccess: "Đã đăng nhập tài khoản giáo viên.",
+  registerSuccess: "Đã tạo tài khoản và đăng nhập.",
+  loginFailed: "Đăng nhập thất bại. Hãy kiểm tra tài khoản và mật khẩu.",
+  registerFailed: "Không thể tạo tài khoản. Tài khoản có thể đã tồn tại hoặc mật khẩu quá ngắn.",
+  teacherSessionExpired: "Phiên đăng nhập giáo viên đã hết hạn. Hãy đăng nhập lại.",
+  historyTitle: "Lịch sử lớp học",
+  historyEmpty: "Các phòng tạo sau khi đăng nhập sẽ hiện ở đây.",
+  openHistoryRoom: "Mở",
+});
+
 const roomForm = document.querySelector("#roomForm");
 const roomCodeInput = document.querySelector("#roomCode");
 const roomMessage = document.querySelector("#roomMessage");
@@ -443,9 +548,14 @@ const joinPanel = document.querySelector("#joinPanel");
 const classroomLayout = document.querySelector("#classroomLayout");
 const teacherLoginCard = document.querySelector("#teacherLoginCard");
 const teacherName = document.querySelector("#teacherName");
-const teacherEmail = document.querySelector("#teacherEmail");
+const teacherUsername = document.querySelector("#teacherUsername");
+const teacherPassword = document.querySelector("#teacherPassword");
+const teacherFields = document.querySelector("#teacherFields");
 const teacherStatusText = document.querySelector("#teacherStatusText");
-const googleLoginButton = document.querySelector("#googleLoginButton");
+const teacherLoginButton = document.querySelector("#teacherLoginButton");
+const teacherRegisterButton = document.querySelector("#teacherRegisterButton");
+const teacherLogoutButton = document.querySelector("#teacherLogoutButton");
+const teacherHistory = document.querySelector("#teacherHistory");
 const studentName = document.querySelector("#studentName");
 const promptText = document.querySelector("#promptText");
 const coursePanel = document.querySelector("#coursePanel");
@@ -468,6 +578,7 @@ const languageSelect = document.querySelector("#languageSelect");
 
 let posts = [];
 let courses = [];
+let teacherSession = loadTeacherProfile();
 let activeRoom = "";
 let activeRole = "teacher";
 let activeCourseId = "default";
@@ -564,7 +675,7 @@ function applyLanguage(language) {
 function teacherProfile() {
   return {
     name: teacherName.value.trim(),
-    email: teacherEmail.value.trim(),
+    username: teacherUsername.value.trim(),
   };
 }
 
@@ -578,68 +689,130 @@ function loadTeacherProfile() {
 
 function saveTeacherProfile(profile) {
   const clean = {
+    id: String(profile.id || "").trim(),
     name: String(profile.name || "").trim().slice(0, 40),
-    email: String(profile.email || "").trim().slice(0, 80),
-    picture: String(profile.picture || "").trim().slice(0, 300),
+    username: String(profile.username || "").trim().slice(0, 80),
   };
+  teacherSession = clean;
   localStorage.setItem(TEACHER_KEY, JSON.stringify(clean));
   teacherName.value = clean.name;
-  teacherEmail.value = clean.email;
+  teacherUsername.value = clean.username;
   updateTeacherStatus();
   return clean;
 }
 
 function updateTeacherStatus() {
-  const profile = teacherProfile();
-  const label = profile.name || profile.email;
+  const token = localStorage.getItem(TEACHER_TOKEN_KEY);
+  const label = teacherSession?.name || teacherSession?.username || "";
   teacherStatusText.textContent = label ? t("teacherSignedIn", { name: label }) : t("teacherNotSignedIn");
+  teacherFields.hidden = Boolean(token && label);
+  teacherLogoutButton.hidden = !token;
+  teacherHistory.hidden = !token;
 }
 
-function decodeJwtPayload(token) {
-  const payload = token.split(".")[1];
-  const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-  return JSON.parse(decodeURIComponent(Array.from(atob(normalized), (char) => {
-    return `%${char.charCodeAt(0).toString(16).padStart(2, "0")}`;
-  }).join("")));
+function teacherToken() {
+  return localStorage.getItem(TEACHER_TOKEN_KEY) || "";
 }
 
-async function loadGoogleClientId() {
-  const metaClientId = document.querySelector('meta[name="google-signin-client_id"]')?.content.trim();
-  if (metaClientId) return metaClientId;
+function authHeaders() {
+  const token = teacherToken();
+  return token ? { "X-Teacher-Token": token } : {};
+}
+
+async function teacherAuth(mode) {
+  const payload = {
+    name: teacherName.value.trim(),
+    username: teacherUsername.value.trim(),
+    password: teacherPassword.value,
+  };
+  if (!payload.username || !payload.password || (mode === "register" && !payload.name)) {
+    teacherUsername.focus();
+    return;
+  }
+  teacherLoginButton.disabled = true;
+  teacherRegisterButton.disabled = true;
   try {
-    const config = await apiRequest("/api/google-config");
-    return String(config.clientId || "").trim();
+    const result = await apiRequest(`/api/teacher/${mode}`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    localStorage.setItem(TEACHER_TOKEN_KEY, result.token);
+    saveTeacherProfile(result.teacher || {});
+    teacherPassword.value = "";
+    roomMessage.textContent = t(mode === "register" ? "registerSuccess" : "loginSuccess");
+    await loadTeacherHistory();
   } catch {
-    return "";
+    roomMessage.textContent = t(mode === "register" ? "registerFailed" : "loginFailed");
+  } finally {
+    teacherLoginButton.disabled = false;
+    teacherRegisterButton.disabled = false;
   }
 }
 
-async function waitForGoogleIdentity() {
-  for (let attempt = 0; attempt < 30; attempt += 1) {
-    if (window.google?.accounts?.id) return true;
-    await new Promise((resolve) => setTimeout(resolve, 200));
-  }
-  return false;
+function logoutTeacher() {
+  localStorage.removeItem(TEACHER_TOKEN_KEY);
+  localStorage.removeItem(TEACHER_KEY);
+  teacherSession = {};
+  teacherName.value = "";
+  teacherUsername.value = "";
+  teacherPassword.value = "";
+  teacherHistory.replaceChildren();
+  updateTeacherStatus();
 }
 
-async function setupGoogleSignIn() {
-  googleClientId = await loadGoogleClientId();
-  if (!googleClientId || !(await waitForGoogleIdentity())) return;
-  window.google.accounts.id.initialize({
-    client_id: googleClientId,
-    callback: async (response) => {
-      try {
-        const login = await apiRequest("/api/google-login", {
-          method: "POST",
-          body: JSON.stringify({ credential: response.credential }),
-        });
-        saveTeacherProfile(login.teacher || {});
-        roomMessage.textContent = "";
-      } catch {
-        roomMessage.textContent = t("googleUnavailable");
-      }
-    },
+async function loadTeacherHistory() {
+  if (!teacherToken()) {
+    renderTeacherHistory([]);
+    return;
+  }
+  try {
+    const session = await apiRequest("/api/teacher/me", { headers: authHeaders() });
+    saveTeacherProfile(session.teacher || teacherSession || {});
+    const data = await apiRequest("/api/teacher/history", { headers: authHeaders() });
+    renderTeacherHistory(data.rooms || []);
+  } catch {
+    localStorage.removeItem(TEACHER_TOKEN_KEY);
+    teacherSession = {};
+    updateTeacherStatus();
+    renderTeacherHistory([]);
+  }
+}
+
+function renderTeacherHistory(rooms) {
+  teacherHistory.replaceChildren();
+  const title = document.createElement("p");
+  title.className = "history-title";
+  title.textContent = t("historyTitle");
+  teacherHistory.append(title);
+
+  if (!rooms.length) {
+    const empty = document.createElement("span");
+    empty.className = "form-note";
+    empty.textContent = t("historyEmpty");
+    teacherHistory.append(empty);
+    return;
+  }
+
+  const list = document.createElement("div");
+  list.className = "history-list";
+  rooms.slice(0, 8).forEach((room) => {
+    const item = document.createElement("div");
+    item.className = "history-item";
+    const label = document.createElement("strong");
+    const courseNames = (room.courses || []).map((course) => course.name).filter(Boolean).slice(0, 2).join("、");
+    label.textContent = `${t("roomPrefix")} ${room.room} · ${courseNames || t("defaultCourse")}`;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "quiet-button";
+    button.textContent = t("openHistoryRoom");
+    button.addEventListener("click", () => {
+      roomCodeInput.value = room.room;
+      enterRoom(room.room, "teacher");
+    });
+    item.append(label, button);
+    list.append(item);
   });
+  teacherHistory.append(list);
 }
 
 function activeCourse() {
@@ -717,10 +890,11 @@ function updateEndCourseButton() {
 async function apiRequest(path, options = {}) {
   let response;
   try {
+    const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
     response = await fetch(`${API_BASE}${path}`, {
-      headers: { "Content-Type": "application/json" },
-      cache: "no-store",
       ...options,
+      headers,
+      cache: "no-store",
     });
   } catch (error) {
     throw new Error("Server is not reachable", { cause: error });
@@ -747,11 +921,17 @@ async function enterRoom(roomCode, role) {
   try {
     let roomInfo;
     if (role === "teacher") {
-      const profile = saveTeacherProfile(teacherProfile());
+      if (!teacherToken()) {
+        roomMessage.textContent = t("loginRequired");
+        teacherUsername.focus();
+        return;
+      }
       roomInfo = await apiRequest(roomInfoPath(roomCode), {
         method: "POST",
-        body: JSON.stringify({ role: "teacher", teacher: profile }),
+        headers: authHeaders(),
+        body: JSON.stringify({ role: "teacher" }),
       });
+      await loadTeacherHistory();
     } else {
       roomInfo = await apiRequest(roomInfoPath(roomCode));
       if (!roomInfo.exists) {
@@ -773,8 +953,16 @@ async function enterRoom(roomCode, role) {
     window.requestAnimationFrame(resizeCanvas);
     await refreshPosts();
     startTimers();
-  } catch {
-    roomMessage.textContent = t("roomCheckFailed");
+  } catch (error) {
+    if (role === "teacher" && error.status === 401) {
+      localStorage.removeItem(TEACHER_TOKEN_KEY);
+      updateTeacherStatus();
+      roomMessage.textContent = t("teacherSessionExpired");
+    } else if (role !== "teacher" && error.status === 404) {
+      roomMessage.textContent = t("roomNotFound");
+    } else {
+      roomMessage.textContent = t("roomCheckFailed");
+    }
     roomCodeInput.focus();
   } finally {
     submitButton.disabled = false;
@@ -814,6 +1002,7 @@ async function createCourse(name) {
   try {
     const data = await apiRequest(coursesPath(), {
       method: "POST",
+      headers: authHeaders(),
       body: JSON.stringify({ name: courseName }),
     });
     courses = data.courses;
@@ -823,6 +1012,7 @@ async function createCourse(name) {
     renderCourses();
     setRoomUi();
     renderBoard();
+    await loadTeacherHistory();
     helperText.textContent = t("courseCreated", { name: activeCourse().name });
   } catch {
     helperText.textContent = t("courseCreateFailed");
@@ -835,7 +1025,7 @@ async function endCourseAndRotatePassword() {
 
   endCourseButton.disabled = true;
   try {
-    const roomInfo = await apiRequest(rotateRoomPath(), { method: "POST" });
+    const roomInfo = await apiRequest(rotateRoomPath(), { method: "POST", headers: authHeaders() });
     activeRoom = roomInfo.room;
     courses = roomInfo.courses?.length ? roomInfo.courses : courses;
     activeCourseId = roomInfo.activeCourseId || activeCourseId;
@@ -845,6 +1035,7 @@ async function endCourseAndRotatePassword() {
     setRoomUi();
     await refreshPosts();
     const message = passwordRotatedMessage(activeRoom);
+    await loadTeacherHistory();
     helperText.textContent = message;
     window.alert(message);
   } catch {
@@ -1106,16 +1297,14 @@ roomForm.addEventListener("submit", (event) => {
 });
 
 roomForm.addEventListener("change", () => setRoomUi());
-teacherName.addEventListener("input", () => saveTeacherProfile(teacherProfile()));
-teacherEmail.addEventListener("input", () => saveTeacherProfile(teacherProfile()));
-
-googleLoginButton.addEventListener("click", () => {
-  if (googleClientId && window.google?.accounts?.id) {
-    window.google.accounts.id.prompt();
-    return;
+teacherLoginButton.addEventListener("click", () => teacherAuth("login"));
+teacherRegisterButton.addEventListener("click", () => teacherAuth("register"));
+teacherLogoutButton.addEventListener("click", logoutTeacher);
+teacherPassword.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    teacherAuth("login");
   }
-  roomMessage.textContent = t("googleUnavailable");
-  teacherName.focus();
 });
 
 courseForm.addEventListener("submit", (event) => {
@@ -1167,7 +1356,7 @@ document.querySelector("#clearBoardButton").addEventListener("click", async () =
   const confirmed = window.confirm(t("confirmClear", { course: activeCourse().name }));
   if (!confirmed) return;
   try {
-    posts = await apiRequest(coursePostsPath(), { method: "DELETE" });
+    posts = await apiRequest(coursePostsPath(), { method: "DELETE", headers: authHeaders() });
     renderBoard();
   } catch {
     helperText.textContent = t("clearFailed");
@@ -1189,8 +1378,9 @@ window.addEventListener("keydown", (event) => {
 
 const savedTeacher = loadTeacherProfile();
 teacherName.value = savedTeacher.name || "";
-teacherEmail.value = savedTeacher.email || "";
-window.addEventListener("load", setupGoogleSignIn);
+teacherUsername.value = savedTeacher.username || "";
+teacherSession = savedTeacher;
+window.addEventListener("load", loadTeacherHistory);
 
 courses = [{ id: "default", name: t("defaultCourse") }];
 resizeCanvas();

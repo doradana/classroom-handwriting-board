@@ -348,6 +348,57 @@ h2 {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.teacher-auth-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  align-self: end;
+}
+
+.teacher-history {
+  width: 100%;
+  display: grid;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.history-title {
+  margin: 0;
+  color: var(--accent-dark);
+  font-size: 0.88rem;
+  font-weight: 900;
+}
+
+.history-list {
+  display: grid;
+  gap: 6px;
+}
+
+.history-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid rgba(242, 119, 168, 0.22);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--ink);
+  font-size: 0.86rem;
+}
+
+.history-item strong,
+.history-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-item button {
+  min-height: 32px;
+  padding: 6px 10px;
+}
+
 .course-panel {
   grid-template-columns: minmax(190px, 0.45fr) minmax(0, 1fr);
   align-items: end;
