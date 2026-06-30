@@ -347,6 +347,11 @@ def parse_course_posts_path(path):
     return match.groups() if match else None
 
 
+def parse_single_post_path(path):
+    match = re.fullmatch(r"/api/rooms/([0-9]{4,8})/courses/([a-zA-Z0-9_-]{1,64})/posts/([a-zA-Z0-9_-]{1,80})", path)
+    return match.groups() if match else None
+
+
 def teacher_history(teacher_id):
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     rooms = []
@@ -572,7 +577,29 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
         json_response(self, 200, room["postsByCourse"][course_id])
 
     def do_DELETE(self):
-        parsed = parse_course_posts_path(urlparse(self.path).path)
+        path = urlparse(self.path).path
+        single_post = parse_single_post_path(path)
+        if single_post:
+            room_code, course_id, post_id = single_post
+            teacher, room = require_room_owner(self, room_code)
+            if not teacher:
+                return
+            if course_id not in room["postsByCourse"]:
+                json_response(self, 404, {"error": "Course not found"})
+                return
+            before = len(room["postsByCourse"][course_id])
+            room["postsByCourse"][course_id] = [
+                post for post in room["postsByCourse"][course_id]
+                if str(post.get("id", "")) != post_id
+            ]
+            if len(room["postsByCourse"][course_id]) == before:
+                json_response(self, 404, {"error": "Post not found"})
+                return
+            save_room(room_code, room)
+            json_response(self, 200, room["postsByCourse"][course_id])
+            return
+
+        parsed = parse_course_posts_path(path)
         if not parsed:
             json_response(self, 404, {"error": "Not found"})
             return

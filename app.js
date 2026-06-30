@@ -89,6 +89,11 @@ const TRANSLATIONS = {
     imageAlt: "{name} 的手写中文",
     expandBoard: "放大公布栏",
     closeBoard: "关闭满版公布栏",
+    expandPost: "放大学生作品",
+    closePost: "关闭放大作品",
+    deletePost: "删除这篇作品",
+    confirmDeletePost: "确定删除 {name} 的这篇作品吗？",
+    deletePostFailed: "删除失败，请确认老师账号是否已登入。",
   },
   "zh-Hant": {
     title: "中文手寫房間公佈欄",
@@ -174,6 +179,11 @@ const TRANSLATIONS = {
     imageAlt: "{name} 的手寫中文",
     expandBoard: "放大公佈欄",
     closeBoard: "關閉滿版公佈欄",
+    expandPost: "放大學生作品",
+    closePost: "關閉放大作品",
+    deletePost: "刪除這篇作品",
+    confirmDeletePost: "確定刪除 {name} 的這篇作品嗎？",
+    deletePostFailed: "刪除失敗，請確認老師帳號是否已登入。",
   },
   en: {
     title: "Chinese Handwriting Room Board",
@@ -259,6 +269,11 @@ const TRANSLATIONS = {
     imageAlt: "{name}'s handwritten Chinese",
     expandBoard: "Expand board",
     closeBoard: "Close full-screen board",
+    expandPost: "Enlarge student work",
+    closePost: "Close enlarged work",
+    deletePost: "Delete this work",
+    confirmDeletePost: "Delete this work by {name}?",
+    deletePostFailed: "Delete failed. Check that the teacher account is signed in.",
   },
   ja: {
     title: "中国語手書きルーム掲示板",
@@ -518,6 +533,11 @@ Object.assign(TRANSLATIONS.ja, {
   historyTitle: "授業履歴",
   historyEmpty: "ログイン後に作成した部屋がここに表示されます。",
   openHistoryRoom: "開く",
+  expandPost: "作品を拡大",
+  closePost: "拡大表示を閉じる",
+  deletePost: "この作品を削除",
+  confirmDeletePost: "{name} の作品を削除しますか？",
+  deletePostFailed: "削除できません。先生アカウントでログインしているか確認してください。",
 });
 
 Object.assign(TRANSLATIONS.vi, {
@@ -539,6 +559,11 @@ Object.assign(TRANSLATIONS.vi, {
   historyTitle: "Lịch sử lớp học",
   historyEmpty: "Các phòng tạo sau khi đăng nhập sẽ hiện ở đây.",
   openHistoryRoom: "Mở",
+  expandPost: "Phóng to bài viết",
+  closePost: "Đóng bài viết phóng to",
+  deletePost: "Xóa bài này",
+  confirmDeletePost: "Xóa bài của {name}?",
+  deletePostFailed: "Xóa thất bại. Hãy kiểm tra tài khoản giáo viên đã đăng nhập.",
 });
 
 const roomForm = document.querySelector("#roomForm");
@@ -849,6 +874,10 @@ function rotateRoomPath() {
 
 function coursePostsPath(courseId = activeCourseId) {
   return `/api/rooms/${encodeURIComponent(activeRoom)}/courses/${encodeURIComponent(courseId)}/posts`;
+}
+
+function singlePostPath(postId, courseId = activeCourseId) {
+  return `${coursePostsPath(courseId)}/${encodeURIComponent(postId)}`;
 }
 
 function loadSavedRoom() {
@@ -1242,6 +1271,60 @@ function filteredPosts() {
   return list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 }
 
+function openPostViewer(post) {
+  const overlay = document.createElement("div");
+  overlay.className = "post-viewer";
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-modal", "true");
+  overlay.setAttribute("aria-label", t("expandPost"));
+
+  const closeButton = document.createElement("button");
+  closeButton.type = "button";
+  closeButton.className = "post-viewer-close";
+  closeButton.textContent = "x";
+  closeButton.title = t("closePost");
+  closeButton.setAttribute("aria-label", t("closePost"));
+
+  const image = document.createElement("img");
+  image.className = "post-viewer-image";
+  image.src = post.image;
+  image.alt = t("imageAlt", { name: post.name });
+
+  const caption = document.createElement("div");
+  caption.className = "post-viewer-caption";
+  caption.textContent = `${post.name} · ${post.prompt}`;
+
+  const onKeyDown = (event) => {
+    if (event.key === "Escape") closeViewer();
+  };
+  const closeViewer = () => {
+    window.removeEventListener("keydown", onKeyDown);
+    overlay.remove();
+  };
+  closeButton.addEventListener("click", closeViewer);
+  overlay.addEventListener("click", (event) => {
+    if (event.target === overlay) closeViewer();
+  });
+  window.addEventListener("keydown", onKeyDown);
+
+  overlay.append(closeButton, image, caption);
+  document.body.append(overlay);
+}
+
+async function deleteSinglePost(post) {
+  if (activeRole !== "teacher" || !post?.id) return;
+  if (!window.confirm(t("confirmDeletePost", { name: post.name }))) return;
+  try {
+    posts = await apiRequest(singlePostPath(post.id, post.courseId || activeCourseId), {
+      method: "DELETE",
+      headers: authHeaders(),
+    });
+    renderBoard();
+  } catch {
+    helperText.textContent = t("deletePostFailed");
+  }
+}
+
 function renderBoard() {
   boardList.replaceChildren();
   const course = activeCourse();
@@ -1262,10 +1345,34 @@ function renderBoard() {
     const card = document.createElement("article");
     card.className = "post-card";
 
+    const imageWrap = document.createElement("div");
+    imageWrap.className = "post-image-wrap";
+
     const image = document.createElement("img");
     image.className = "post-image";
     image.src = post.image;
     image.alt = t("imageAlt", { name: post.name });
+
+    const expandButton = document.createElement("button");
+    expandButton.type = "button";
+    expandButton.className = "post-action post-action-expand";
+    expandButton.textContent = "⛶";
+    expandButton.title = t("expandPost");
+    expandButton.setAttribute("aria-label", t("expandPost"));
+    expandButton.addEventListener("click", () => openPostViewer(post));
+
+    imageWrap.append(image, expandButton);
+
+    if (activeRole === "teacher") {
+      const deleteButton = document.createElement("button");
+      deleteButton.type = "button";
+      deleteButton.className = "post-action post-action-delete";
+      deleteButton.textContent = "x";
+      deleteButton.title = t("deletePost");
+      deleteButton.setAttribute("aria-label", t("deletePost"));
+      deleteButton.addEventListener("click", () => deleteSinglePost(post));
+      imageWrap.append(deleteButton);
+    }
 
     const meta = document.createElement("div");
     meta.className = "post-meta";
@@ -1284,7 +1391,7 @@ function renderBoard() {
     prompt.textContent = post.prompt;
 
     meta.append(title, prompt);
-    card.append(image, meta);
+    card.append(imageWrap, meta);
     fragment.append(card);
   });
   boardList.append(fragment);
