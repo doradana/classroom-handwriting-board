@@ -14,9 +14,22 @@ from datetime import datetime, timezone
 
 
 ROOT = Path(__file__).resolve().parent
-DATA_DIR = ROOT / "data" / "rooms"
-TEACHERS_FILE = ROOT / "data" / "teachers.json"
-SESSION_SECRET_FILE = ROOT / "data" / "session-secret.txt"
+
+
+def default_data_root():
+    env_path = os.environ.get("CLASSROOM_DATA_DIR") or os.environ.get("DATA_DIR")
+    if env_path:
+        return Path(env_path).expanduser()
+    render_disk = Path("/var/data")
+    if render_disk.exists():
+        return render_disk
+    return ROOT / "data"
+
+
+DATA_ROOT = default_data_root()
+DATA_DIR = DATA_ROOT / "rooms"
+TEACHERS_FILE = DATA_ROOT / "teachers.json"
+SESSION_SECRET_FILE = DATA_ROOT / "session-secret.txt"
 MAX_BODY_BYTES = 4 * 1024 * 1024
 ROOM_RE = re.compile(r"^[0-9]{4,8}$")
 COURSE_RE = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
