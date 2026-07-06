@@ -752,6 +752,19 @@ button:focus-visible {
   background: rgba(168, 63, 114, 0.42);
 }
 
+@media (pointer: coarse) {
+  .canvas-wrap {
+    box-shadow:
+      inset -14px 0 0 rgba(242, 119, 168, 0.1),
+      inset 0 -14px 0 rgba(242, 119, 168, 0.1);
+  }
+
+  .canvas-wrap::-webkit-scrollbar {
+    width: 16px;
+    height: 16px;
+  }
+}
+
 .canvas-stage {
   position: relative;
   z-index: 1;
@@ -1264,15 +1277,55 @@ body.board-fullscreen {
 }
 
 @media (max-width: 680px) {
+  html,
+  body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    font-size: clamp(12px, 3.65vw, 16px);
+  }
+
   .app-shell {
-    padding: 12px;
+    width: 100%;
+    max-width: 100vw;
+    padding: clamp(6px, 2.6vw, 12px);
+  }
+
+  .workspace,
+  .layout,
+  .writer-panel,
+  .board-panel,
+  .canvas-card {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .topbar {
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  h1 {
+    font-size: clamp(1.28rem, 7.6vw, 2.05rem);
+    line-height: 1.04;
+  }
+
+  h2 {
+    font-size: clamp(1.12rem, 5.6vw, 1.55rem);
+  }
+
+  .eyebrow {
+    margin-bottom: 2px;
+    font-size: 0.74rem;
   }
 
   .topbar,
-  .actions,
-  .board-head {
-    align-items: stretch;
+  .actions {
     flex-direction: column;
+    align-items: stretch;
   }
 
   .top-status,
@@ -1280,13 +1333,50 @@ body.board-fullscreen {
   .sync-pill,
   .room-pill,
   .language-select {
-    align-self: flex-start;
+    align-self: stretch;
   }
 
+  .top-status {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+    width: 100%;
+    padding-top: 0;
+  }
+
+  .top-leave-button,
   .language-select {
     width: 100%;
+    min-height: 36px;
     justify-content: space-between;
     border-radius: 8px;
+  }
+
+  .language-select span {
+    font-size: 0.72rem;
+  }
+
+  .language-select select {
+    min-height: 30px;
+    font-size: 0.86rem;
+  }
+
+  .layout {
+    gap: 8px;
+  }
+
+  .writer-panel,
+  .board-panel {
+    padding: 8px;
+    border-radius: 12px;
+  }
+
+  .teacher-login-card,
+  .course-panel,
+  .classroom-history {
+    gap: 8px;
+    padding: 8px;
+    border-radius: 12px;
   }
 
   .student-form,
@@ -1299,14 +1389,83 @@ body.board-fullscreen {
     grid-template-columns: 1fr;
   }
 
+  .student-form,
+  .course-controls,
+  .course-form {
+    gap: 7px;
+  }
+
+  label span {
+    margin-bottom: 3px;
+    font-size: 0.78rem;
+  }
+
+  input,
+  select {
+    min-height: 34px;
+    padding: 6px 9px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+  }
+
+  .canvas-card {
+    border-radius: 12px;
+  }
+
+  .canvas-toolbar {
+    gap: 5px;
+    padding: 6px;
+  }
+
+  .tool-button,
+  .icon-button,
+  .quiet-button,
+  .primary-action {
+    min-height: 34px;
+    padding: 6px 10px;
+    font-size: 0.86rem;
+  }
+
+  .tool-button {
+    min-width: 36px;
+  }
+
+  .icon-button {
+    width: 34px;
+    padding: 0;
+    font-size: 1.06rem;
+  }
+
+  .range-control,
+  .color-control,
+  .canvas-scale-control {
+    min-height: 34px;
+    gap: 6px;
+    padding: 0 8px;
+    border-radius: 10px;
+    font-size: 0.82rem;
+  }
+
+  .range-control {
+    flex: 1 1 138px;
+  }
+
+  .range-control input {
+    width: min(30vw, 104px);
+  }
+
+  .color-control {
+    flex: 0 1 92px;
+  }
+
   .canvas-wrap {
-    height: var(--canvas-height, 340px);
-    min-height: 280px;
-    max-height: 460px;
+    height: var(--canvas-height, clamp(250px, 50dvh, 380px));
+    min-height: 240px;
+    max-height: min(420px, 56dvh);
   }
 
   .canvas-size-controls {
-    width: 100%;
+    flex: 0 0 auto;
     justify-content: center;
     border-radius: 8px;
   }
@@ -1317,13 +1476,13 @@ body.board-fullscreen {
   }
 
   .canvas-scale-control {
-    width: 100%;
+    flex: 1 1 146px;
     border-radius: 8px;
   }
 
   .canvas-scale-control input {
     flex: 1 1 auto;
-    width: auto;
+    width: min(34vw, 112px);
   }
 
   .primary-action,
@@ -1333,6 +1492,26 @@ body.board-fullscreen {
 
   .board-actions {
     width: 100%;
+  }
+
+  .board-head {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  #boardCourseLabel {
+    max-width: 100%;
+    text-align: left;
+    font-size: 0.88rem;
+  }
+
+  .filter-row {
+    gap: 6px;
+  }
+
+  .filter-row select {
+    flex-basis: 92px;
   }
 
   .login-head {
@@ -1356,5 +1535,50 @@ body.board-fullscreen {
     flex-basis: 84px;
     height: 84px;
     min-height: 84px;
+  }
+}
+
+@media (max-width: 380px) {
+  body {
+    font-size: clamp(11px, 3.55vw, 13px);
+  }
+
+  .app-shell {
+    padding: 6px;
+  }
+
+  h1 {
+    font-size: clamp(1.16rem, 7vw, 1.55rem);
+  }
+
+  .writer-panel,
+  .board-panel,
+  .course-panel {
+    padding: 7px;
+  }
+
+  input,
+  select,
+  .tool-button,
+  .icon-button,
+  .quiet-button,
+  .primary-action {
+    min-height: 32px;
+  }
+
+  .canvas-toolbar {
+    gap: 4px;
+  }
+
+  .range-control,
+  .color-control,
+  .canvas-scale-control {
+    min-height: 32px;
+    padding-inline: 7px;
+  }
+
+  .canvas-wrap {
+    height: var(--canvas-height, clamp(230px, 48dvh, 340px));
+    min-height: 220px;
   }
 }
