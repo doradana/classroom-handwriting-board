@@ -1,6 +1,6 @@
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, unquote_plus, urlparse
 import base64
 import hashlib
 import hmac
@@ -32,6 +32,7 @@ TEACHERS_FILE = DATA_ROOT / "teachers.json"
 SESSION_SECRET_FILE = DATA_ROOT / "session-secret.txt"
 MAX_BODY_BYTES = 4 * 1024 * 1024
 ROOM_RE = re.compile(r"^[0-9]{4,8}$")
+COURSE_CODE_RE = re.compile(r"^[0-9]{6}$")
 COURSE_RE = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
 USERNAME_RE = re.compile(r"^[A-Za-z0-9_.@-]{3,60}$")
 DEFAULT_COURSE_ID = "default"
@@ -127,6 +128,28 @@ def login_teacher(payload):
     return teacher, None
 
 
+def reset_teacher_password(payload):
+    username = str(payload.get("username", "")).strip().lower()
+    name = str(payload.get("name", "")).strip()
+    password = str(payload.get("password", ""))
+    if not USERNAME_RE.match(username) or not name or len(password) < 6:
+        return None, "Invalid reset request"
+    data = load_teachers()
+    teacher = None
+    for item in data["teachers"]:
+        if str(item.get("username", "")).lower() == username:
+            teacher = item
+            break
+    if not teacher or str(teacher.get("name", "")).strip() != name:
+        return None, "Invalid reset request"
+    salt, digest = password_hash(password)
+    teacher["salt"] = salt
+    teacher["passwordHash"] = digest
+    teacher["passwordUpdatedAt"] = now_iso()
+    save_teachers(data)
+    return teacher, None
+
+
 def issue_session(teacher):
     teacher_id = teacher["id"]
     signature = hmac.new(session_secret().encode("utf-8"), teacher_id.encode("utf-8"), hashlib.sha256).hexdigest()
@@ -175,15 +198,25 @@ def generate_room_code():
     raise RuntimeError("Could not generate an unused room code")
 
 
+def generate_course_code():
+    for _ in range(200):
+        code = str(100000 + (uuid.uuid4().int % 900000))
+        if code != "00000000" and not course_code_in_use(code):
+            return code
+    raise RuntimeError("Could not generate an unused course code")
+
+
 def default_room(room_code):
     return {
         "room": room_code,
+        "name": "",
         "teacher": {},
         "teacherId": "",
         "courses": [
             {
                 "id": DEFAULT_COURSE_ID,
                 "name": "預設課程",
+                "code": "",
                 "createdAt": now_iso(),
             }
         ],
@@ -206,6 +239,7 @@ def normalize_room(room_code, data):
 
     if not isinstance(room.get("teacher"), dict):
         room["teacher"] = {}
+    room["name"] = sanitize_room_name(room.get("name"))
     room["teacherId"] = str(room.get("teacherId") or "")
     if not isinstance(room.get("courses"), list) or not room["courses"]:
         room["courses"] = default_room(room_code)["courses"]
@@ -221,10 +255,12 @@ def normalize_room(room_code, data):
         if not COURSE_RE.match(course_id) or course_id in seen:
             continue
         name = str(course.get("name", "")).strip()[:40] or "未命名課程"
+        course_code = sanitize_course_code(course.get("code"))
         clean_courses.append(
             {
                 "id": course_id,
                 "name": name,
+                "code": course_code,
                 "createdAt": str(course.get("createdAt") or now_iso()),
             }
         )
@@ -246,15 +282,49 @@ def normalize_room(room_code, data):
     return room
 
 
+def ensure_unique_course_codes(room_code, room):
+    changed = False
+    seen_codes = set()
+    for course in room.get("courses", []):
+        course_id = str(course.get("id", "")).strip()
+        course_code = sanitize_course_code(course.get("code"))
+        if (
+            not course_code
+            or course_code in seen_codes
+            or course_code_in_use(course_code, room_code, course_id)
+        ):
+            course_code = generate_course_code()
+            course["code"] = course_code
+            changed = True
+        seen_codes.add(course_code)
+    return changed
+
+
 def load_room(room_code):
     path = room_file(room_code)
     if path is None or not path.exists():
-        return default_room(room_code)
+        room = default_room(room_code)
+        ensure_unique_course_codes(room_code, room)
+        return room
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
         data = {}
-    return normalize_room(room_code, data)
+    room = normalize_room(room_code, data)
+    if ensure_unique_course_codes(room_code, room):
+        save_room(room_code, room)
+    return room
+
+
+def load_room_raw(room_code):
+    path = room_file(room_code)
+    if path is None or not path.exists():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {}
+    return data if isinstance(data, dict) else {}
 
 
 def save_room(room_code, room):
@@ -285,6 +355,30 @@ def rotate_room_code(room_code):
     return room
 
 
+def rotate_active_course_code(room_code):
+    if not room_exists(room_code):
+        return None
+    room = load_room(room_code)
+    active_course_id = room.get("activeCourseId", DEFAULT_COURSE_ID)
+    course = next((item for item in room.get("courses", []) if item.get("id") == active_course_id), None)
+    if not course and room.get("courses"):
+        course = room["courses"][0]
+        room["activeCourseId"] = course["id"]
+    if not course:
+        return None
+    history = course.get("passwordHistory")
+    if not isinstance(history, list):
+        history = []
+    old_code = sanitize_course_code(course.get("code"))
+    if old_code:
+        history.append({"code": old_code, "endedAt": now_iso()})
+    course["passwordHistory"] = history[-20:]
+    course["code"] = generate_course_code()
+    room["lastRotatedAt"] = now_iso()
+    save_room(room_code, room)
+    return room
+
+
 def ensure_room(room_code, teacher=None):
     room = load_room(room_code)
     if teacher:
@@ -306,6 +400,15 @@ def sanitize_teacher(value):
 
 def sanitize_course_name(value):
     return str(value or "").strip()[:40] or "未命名課程"
+
+
+def sanitize_course_code(value):
+    value = str(value or "").strip()
+    return value if COURSE_CODE_RE.match(value) else ""
+
+
+def sanitize_room_name(value):
+    return str(value or "").strip()[:32]
 
 
 def read_json(handler):
@@ -333,6 +436,7 @@ def json_response(handler, status, payload):
 def room_summary(room):
     return {
         "room": room["room"],
+        "name": room.get("name", ""),
         "exists": True,
         "teacher": room.get("teacher", {}),
         "courses": room.get("courses", []),
@@ -345,9 +449,23 @@ def parse_room_path(path):
     return match.group(1) if match else None
 
 
+def parse_create_room_path(path):
+    return path == "/api/rooms"
+
+
+def parse_course_lookup_path(path):
+    match = re.fullmatch(r"/api/courses/by-code/([0-9]{6})", path)
+    return match.group(1) if match else None
+
+
 def parse_courses_path(path):
     match = re.fullmatch(r"/api/rooms/([0-9]{4,8})/courses", path)
     return match.group(1) if match else None
+
+
+def parse_course_path(path):
+    match = re.fullmatch(r"/api/rooms/([0-9]{4,8})/courses/([a-zA-Z0-9_-]{1,64})", path)
+    return match.groups() if match else None
 
 
 def parse_rotate_path(path):
@@ -373,21 +491,72 @@ def teacher_history(teacher_id):
         if not ROOM_RE.match(room_code):
             continue
         room = load_room(room_code)
-        if room.get("teacherId") != teacher_id:
+        room_teacher_id = str(room.get("teacherId") or "")
+        if room_teacher_id and room_teacher_id != teacher_id:
             continue
         courses = room.get("courses", [])
-        total_posts = sum(len(posts) for posts in room.get("postsByCourse", {}).values() if isinstance(posts, list))
+        post_times = []
+        total_posts = 0
+        for posts in room.get("postsByCourse", {}).values():
+            if not isinstance(posts, list):
+                continue
+            total_posts += len(posts)
+            post_times.extend(str(post.get("createdAt", "")) for post in posts if isinstance(post, dict))
+        updated_candidates = [course.get("createdAt", "") for course in courses]
+        updated_candidates.extend(post_times)
+        updated_candidates.append(room.get("lastRotatedAt", ""))
         rooms.append(
             {
                 "room": room_code,
+                "name": room.get("name", ""),
                 "courses": courses,
                 "activeCourseId": room.get("activeCourseId", DEFAULT_COURSE_ID),
                 "totalPosts": total_posts,
-                "updatedAt": max([course.get("createdAt", "") for course in courses] or [room.get("lastRotatedAt", "")]),
+                "updatedAt": max(updated_candidates),
             }
         )
     rooms.sort(key=lambda item: item.get("updatedAt", ""), reverse=True)
     return rooms
+
+
+def find_course_by_code(course_code):
+    course_code = sanitize_course_code(course_code)
+    if not course_code:
+        return None, None
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    for path in DATA_DIR.glob("*.json"):
+        room_code = path.stem
+        if not ROOM_RE.match(room_code):
+            continue
+        room = load_room(room_code)
+        for course in room.get("courses", []):
+            if sanitize_course_code(course.get("code")) == course_code:
+                return room, course
+    return None, None
+
+
+def course_code_in_use(course_code, allow_room_code=None, allow_course_id=None):
+    course_code = sanitize_course_code(course_code)
+    if not course_code:
+        return False
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    for path in DATA_DIR.glob("*.json"):
+        room_code = path.stem
+        if not ROOM_RE.match(room_code):
+            continue
+        data = load_room_raw(room_code)
+        courses = data.get("courses", [])
+        if not isinstance(courses, list):
+            continue
+        for course in courses:
+            if not isinstance(course, dict):
+                continue
+            if sanitize_course_code(course.get("code")) != course_code:
+                continue
+            if room_code == allow_room_code and str(course.get("id", "")) == str(allow_course_id or ""):
+                continue
+            return True
+    return False
 
 
 def require_teacher(handler):
@@ -422,8 +591,12 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
 
     def end_headers(self):
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+        if not urlparse(self.path).path.startswith("/api/"):
+            self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+            self.send_header("Pragma", "no-cache")
+            self.send_header("Expires", "0")
         super().end_headers()
 
     def do_OPTIONS(self):
@@ -431,7 +604,8 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        path = urlparse(self.path).path
+        parsed_url = urlparse(self.path)
+        path = parsed_url.path
 
         if path == "/api/teacher/me":
             teacher = require_teacher(self)
@@ -445,6 +619,18 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
             if not teacher:
                 return
             json_response(self, 200, {"rooms": teacher_history(teacher["id"])})
+            return
+
+        course_code = parse_course_lookup_path(path)
+        if course_code:
+            room, course = find_course_by_code(course_code)
+            if not room or not course:
+                json_response(self, 404, {"error": "Course not found"})
+                return
+            summary = room_summary(room)
+            summary["activeCourseId"] = course["id"]
+            summary["joinedCourseCode"] = course_code
+            json_response(self, 200, summary)
             return
 
         room_code = parse_room_path(path)
@@ -474,7 +660,15 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
             if course_id not in room["postsByCourse"]:
                 json_response(self, 404, {"error": "Course not found"})
                 return
-            json_response(self, 200, room["postsByCourse"][course_id])
+            student_name = unquote_plus(parse_qs(parsed_url.query).get("student", [""])[0]).strip()[:18]
+            course_posts = room["postsByCourse"][course_id]
+            if student_name:
+                course_posts = [post for post in course_posts if str(post.get("name", "")).strip() == student_name]
+            else:
+                teacher, _room = require_room_owner(self, room_code)
+                if not teacher:
+                    return
+            json_response(self, 200, course_posts)
             return
 
         super().do_GET()
@@ -497,6 +691,38 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
             json_response(self, 200, {"token": issue_session(teacher), "teacher": public_teacher(teacher)})
             return
 
+        if path == "/api/teacher/reset-password":
+            payload = read_json(self)
+            if payload is None:
+                json_response(self, 400, {"error": "Invalid JSON"})
+                return
+            teacher, error = reset_teacher_password(payload)
+            if error:
+                json_response(self, 400, {"error": error})
+                return
+            json_response(self, 200, {"token": issue_session(teacher), "teacher": public_teacher(teacher)})
+            return
+
+        if parse_create_room_path(path):
+            payload = read_json(self)
+            if payload is None:
+                json_response(self, 400, {"error": "Invalid JSON"})
+                return
+            if payload.get("role") != "teacher":
+                json_response(self, 403, {"error": "Only teachers can create rooms"})
+                return
+            teacher = require_teacher(self)
+            if not teacher:
+                return
+            room_code = generate_room_code()
+            room = ensure_room(room_code, teacher)
+            room["name"] = sanitize_room_name(payload.get("name")) or "Default room"
+            room["courses"][0]["name"] = sanitize_course_name(payload.get("courseName")) or room["courses"][0]["name"]
+            room["courses"][0]["code"] = generate_course_code()
+            save_room(room_code, room)
+            json_response(self, 200, room_summary(room))
+            return
+
         room_code = parse_room_path(path)
         if room_code:
             payload = read_json(self)
@@ -515,6 +741,16 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
                     json_response(self, 403, {"error": "This room belongs to another teacher"})
                     return
             room = ensure_room(room_code, teacher)
+            room_name = sanitize_room_name(payload.get("name"))
+            if room_name:
+                room["name"] = room_name
+            course_code = sanitize_course_code(payload.get("courseCode") or room_code)
+            if course_code and room["courses"]:
+                if course_code_in_use(course_code, room_code, room["courses"][0].get("id")):
+                    json_response(self, 409, {"error": "Course code already exists"})
+                    return
+                room["courses"][0]["code"] = course_code
+                save_room(room_code, room)
             json_response(self, 200, room_summary(room))
             return
 
@@ -523,7 +759,7 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
             teacher, _room = require_room_owner(self, room_code)
             if not teacher:
                 return
-            room = rotate_room_code(room_code)
+            room = rotate_active_course_code(room_code)
             json_response(self, 200, room_summary(room))
             return
 
@@ -539,6 +775,7 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
             course = {
                 "id": uuid.uuid4().hex[:12],
                 "name": sanitize_course_name(payload.get("name")),
+                "code": generate_course_code(),
                 "createdAt": now_iso(),
             }
             room["courses"].append(course)
@@ -587,10 +824,56 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
             },
         )
         save_room(room_code, room)
-        json_response(self, 200, room["postsByCourse"][course_id])
+        own_posts = [post for post in room["postsByCourse"][course_id] if str(post.get("name", "")).strip() == name]
+        json_response(self, 200, own_posts)
+
+    def do_PATCH(self):
+        path = urlparse(self.path).path
+        room_code = parse_room_path(path)
+        if room_code:
+            teacher, room = require_room_owner(self, room_code)
+            if not teacher:
+                return
+            payload = read_json(self)
+            if payload is None:
+                json_response(self, 400, {"error": "Invalid JSON"})
+                return
+            room["name"] = sanitize_room_name(payload.get("name"))
+            save_room(room_code, room)
+            json_response(self, 200, room_summary(room))
+            return
+
+        parsed = parse_course_path(path)
+        if not parsed:
+            json_response(self, 404, {"error": "Not found"})
+            return
+        room_code, course_id = parsed
+        teacher, room = require_room_owner(self, room_code)
+        if not teacher:
+            return
+        payload = read_json(self)
+        if payload is None:
+            json_response(self, 400, {"error": "Invalid JSON"})
+            return
+        for course in room["courses"]:
+            if course.get("id") == course_id:
+                course["name"] = sanitize_course_name(payload.get("name"))
+                save_room(room_code, room)
+                json_response(self, 200, {"course": course, "courses": room["courses"], "activeCourseId": room.get("activeCourseId", DEFAULT_COURSE_ID)})
+                return
+        json_response(self, 404, {"error": "Course not found"})
 
     def do_DELETE(self):
         path = urlparse(self.path).path
+        room_code = parse_room_path(path)
+        if room_code:
+            teacher, _room = require_room_owner(self, room_code)
+            if not teacher:
+                return
+            room_file(room_code).unlink(missing_ok=True)
+            json_response(self, 200, {"deleted": True, "room": room_code})
+            return
+
         single_post = parse_single_post_path(path)
         if single_post:
             room_code, course_id, post_id = single_post
@@ -610,6 +893,41 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
                 return
             save_room(room_code, room)
             json_response(self, 200, room["postsByCourse"][course_id])
+            return
+
+        course_target = parse_course_path(path)
+        if course_target:
+            room_code, course_id = course_target
+            teacher, room = require_room_owner(self, room_code)
+            if not teacher:
+                return
+            existing_ids = {course.get("id") for course in room.get("courses", [])}
+            if course_id not in existing_ids:
+                json_response(self, 404, {"error": "Course not found"})
+                return
+            room["courses"] = [course for course in room["courses"] if course.get("id") != course_id]
+            room["postsByCourse"].pop(course_id, None)
+            if not room["courses"]:
+                default_course = default_room(room_code)["courses"][0]
+                room["courses"] = [default_course]
+                room["postsByCourse"] = {default_course["id"]: []}
+            active_course_id = room["activeCourseId"]
+            if active_course_id == course_id or active_course_id not in {course.get("id") for course in room["courses"]}:
+                active_course_id = room["courses"][0]["id"]
+                room["activeCourseId"] = active_course_id
+            room["postsByCourse"].setdefault(active_course_id, [])
+            save_room(room_code, room)
+            json_response(
+                self,
+                200,
+                {
+                    "deleted": True,
+                    "courseId": course_id,
+                    "courses": room["courses"],
+                    "activeCourseId": active_course_id,
+                    "posts": room["postsByCourse"][active_course_id],
+                },
+            )
             return
 
         parsed = parse_course_posts_path(path)
