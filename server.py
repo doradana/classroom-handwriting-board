@@ -589,6 +589,9 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(ROOT), **kwargs)
 
+    def log_message(self, format, *args):
+        return
+
     def end_headers(self):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
@@ -947,6 +950,9 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
 
 
 def main():
+    log_path = ROOT / "server-runtime.log"
+    sys.stdout = open(log_path, "a", encoding="utf-8", buffering=1)
+    sys.stderr = sys.stdout
     host = "0.0.0.0"
     port = int(os.environ.get("PORT") or (sys.argv[1] if len(sys.argv) > 1 else 8030))
     server = ThreadingHTTPServer((host, port), ClassroomHandler)
