@@ -1,7 +1,8 @@
-const STORAGE_KEY = "classroom-handwriting-room";
+﻿const STORAGE_KEY = "classroom-handwriting-room";
 const LANGUAGE_KEY = "classroom-handwriting-language";
 const TEACHER_KEY = "classroom-handwriting-teacher";
 const TEACHER_TOKEN_KEY = "classroom-handwriting-teacher-token";
+const CANVAS_HEIGHT_KEY = "classroom-handwriting-canvas-height";
 const API_BASE = window.location.protocol === "file:" ? "http://127.0.0.1:8030" : "";
 
 const TRANSLATIONS = {
@@ -9,7 +10,7 @@ const TRANSLATIONS = {
     title: "中文手写房间公布栏",
     eyebrow: "课堂手写练习",
     appTitle: "中文手写房间公布栏",
-    languageLabel: "界面语言",
+    languageLabel: "语言",
     roomPassword: "房间密码",
     joinHeadline: "老师设定数字，学生输入后一起进入同一个公布栏",
     teacher: "老师",
@@ -31,9 +32,12 @@ const TRANSLATIONS = {
     courseFolder: "课程文件夹",
     defaultCourse: "默认课程",
     selectCourse: "选择课程",
-    newCourseName: "新增课程文件夹",
+    newCourseName: "课程名称",
     newCoursePlaceholder: "例如：三年级第一课",
     addCourse: "新增",
+    renameCourse: "修改名称",
+    courseRenamed: "课程已改名：{name}",
+    courseRenameFailed: "修改课程名称失败，请确认老师账号是否已登入。",
     courseCreated: "已新增课程：{name}",
     courseCreateFailed: "新增课程失败，请确认服务器是否开启。",
     studentName: "学生姓名",
@@ -55,8 +59,11 @@ const TRANSLATIONS = {
     submitPost: "送到公布栏",
     sameRoomVisible: "同房间可见",
     boardTitle: "公布栏",
+    myWorksTitle: "我的作品",
     switchRoom: "换房间",
-    clearBoard: "清空公布栏",
+    leaveRoom: "离开",
+  clearBoard: "清空公布栏",
+  deleteRoom: "删除房间",
     searchPlaceholder: "搜索姓名或主题",
     searchLabel: "搜索作品",
     sortLabel: "排序",
@@ -65,6 +72,8 @@ const TRANSLATIONS = {
     sortName: "姓名",
     emptyTitle: "这个课程还没有作品",
     emptyText: "学生送出手写作品后，会出现在这里。",
+    myWorksEmptyTitle: "你还没有送出作品",
+    myWorksEmptyText: "你送出的手写作品会出现在这里。",
     roomPrefix: "房间",
     postCount: "{count} 件作品",
     roomSync: "房间同步",
@@ -72,6 +81,7 @@ const TRANSLATIONS = {
     notInRoom: "未进入房间",
     helperLocked: "请先进入房间，再开始书写。",
     helperInRoom: "写完后送出；同房间、同课程的人都会看到。",
+    helperInRoomStudent: "写完后送出；老师可以看到，你也能看到自己的作品。",
     invalidRoom: "房间密码必须是 4 到 8 位数字。",
     roomNotFound: "这个房间还没有建立。请确认老师已经先设定这个数字。",
     roomCheckFailed: "无法确认房间，请确认服务器是否开启。",
@@ -99,7 +109,7 @@ const TRANSLATIONS = {
     title: "中文手寫房間公佈欄",
     eyebrow: "課堂手寫練習",
     appTitle: "中文手寫房間公佈欄",
-    languageLabel: "介面語言",
+    languageLabel: "語言",
     roomPassword: "房間密碼",
     joinHeadline: "老師設定數字，學生輸入後一起進入同一個公佈欄",
     teacher: "老師",
@@ -121,9 +131,12 @@ const TRANSLATIONS = {
     courseFolder: "課程資料夾",
     defaultCourse: "預設課程",
     selectCourse: "選擇課程",
-    newCourseName: "新增課程資料夾",
+    newCourseName: "課程名稱",
     newCoursePlaceholder: "例如：三年級第一課",
     addCourse: "新增",
+    renameCourse: "修改名稱",
+    courseRenamed: "課程已改名：{name}",
+    courseRenameFailed: "修改課程名稱失敗，請確認老師帳號是否已登入。",
     courseCreated: "已新增課程：{name}",
     courseCreateFailed: "新增課程失敗，請確認伺服器是否開啟。",
     studentName: "學生姓名",
@@ -145,8 +158,11 @@ const TRANSLATIONS = {
     submitPost: "送到公佈欄",
     sameRoomVisible: "同房間可見",
     boardTitle: "公佈欄",
+    myWorksTitle: "我的作品",
     switchRoom: "換房間",
-    clearBoard: "清空公佈欄",
+    leaveRoom: "離開",
+  clearBoard: "清空公佈欄",
+  deleteRoom: "刪除房間",
     searchPlaceholder: "搜尋姓名或主題",
     searchLabel: "搜尋作品",
     sortLabel: "排序",
@@ -155,6 +171,8 @@ const TRANSLATIONS = {
     sortName: "姓名",
     emptyTitle: "這個課程還沒有作品",
     emptyText: "學生送出手寫作品後，會出現在這裡。",
+    myWorksEmptyTitle: "你還沒有送出作品",
+    myWorksEmptyText: "你送出的手寫作品會出現在這裡。",
     roomPrefix: "房間",
     postCount: "{count} 件作品",
     roomSync: "房間同步",
@@ -162,6 +180,7 @@ const TRANSLATIONS = {
     notInRoom: "未進入房間",
     helperLocked: "請先進入房間，再開始書寫。",
     helperInRoom: "寫完後送出；同房間、同課程的人都會看到。",
+    helperInRoomStudent: "寫完後送出；老師可以看到，你也能看到自己的作品。",
     invalidRoom: "房間密碼必須是 4 到 8 位數字。",
     roomNotFound: "這個房間還沒有建立。請確認老師已經先設定這個數字。",
     roomCheckFailed: "無法確認房間，請確認伺服器是否開啟。",
@@ -189,7 +208,7 @@ const TRANSLATIONS = {
     title: "Chinese Handwriting Room Board",
     eyebrow: "Class handwriting practice",
     appTitle: "Chinese Handwriting Room Board",
-    languageLabel: "Interface language",
+    languageLabel: "Language",
     roomPassword: "Room code",
     joinHeadline: "The teacher sets a number, and students join the same board",
     teacher: "Teacher",
@@ -211,9 +230,12 @@ const TRANSLATIONS = {
     courseFolder: "Course folder",
     defaultCourse: "Default course",
     selectCourse: "Select course",
-    newCourseName: "New course folder",
+    newCourseName: "Course name",
     newCoursePlaceholder: "Example: Grade 3 Lesson 1",
     addCourse: "Add",
+    renameCourse: "Rename",
+    courseRenamed: "Course renamed: {name}",
+    courseRenameFailed: "Could not rename the course. Check that the teacher account is signed in.",
     courseCreated: "Course added: {name}",
     courseCreateFailed: "Could not add course. Please check the server.",
     studentName: "Student name",
@@ -235,8 +257,11 @@ const TRANSLATIONS = {
     submitPost: "Send to board",
     sameRoomVisible: "Visible in this room",
     boardTitle: "Board",
+    myWorksTitle: "My work",
     switchRoom: "Switch room",
-    clearBoard: "Clear board",
+    leaveRoom: "Leave",
+  clearBoard: "Clear board",
+  deleteRoom: "Delete room",
     searchPlaceholder: "Search name or topic",
     searchLabel: "Search work",
     sortLabel: "Sort",
@@ -245,6 +270,8 @@ const TRANSLATIONS = {
     sortName: "Name",
     emptyTitle: "No work in this course yet",
     emptyText: "Student handwriting will appear here after submission.",
+    myWorksEmptyTitle: "You have not submitted work yet",
+    myWorksEmptyText: "Your submitted handwriting will appear here.",
     roomPrefix: "Room",
     postCount: "{count} works",
     roomSync: "Room sync",
@@ -252,6 +279,7 @@ const TRANSLATIONS = {
     notInRoom: "Not in room",
     helperLocked: "Enter a room before handwriting.",
     helperInRoom: "Submit when finished. Everyone in the same room and course will see it.",
+    helperInRoomStudent: "Submit when finished. The teacher can see it, and you can see your own work.",
     invalidRoom: "The room code must be 4 to 8 digits.",
     roomNotFound: "This room has not been created yet. Please check that the teacher has set this number first.",
     roomCheckFailed: "Could not check the room. Please confirm that the server is running.",
@@ -279,7 +307,7 @@ const TRANSLATIONS = {
     title: "中国語手書きルーム掲示板",
     eyebrow: "授業の手書き練習",
     appTitle: "中国語手書きルーム掲示板",
-    languageLabel: "表示言語",
+    languageLabel: "言語",
     roomPassword: "ルーム番号",
     joinHeadline: "先生が数字を設定し、学生が入力して同じ掲示板に入ります",
     teacher: "先生",
@@ -301,9 +329,12 @@ const TRANSLATIONS = {
     courseFolder: "授業フォルダ",
     defaultCourse: "標準コース",
     selectCourse: "コース選択",
-    newCourseName: "新しい授業フォルダ",
+    newCourseName: "授業名",
     newCoursePlaceholder: "例：3年生 第1課",
     addCourse: "追加",
+    renameCourse: "名前を変更",
+    courseRenamed: "コース名を変更しました：{name}",
+    courseRenameFailed: "コース名を変更できません。先生アカウントでログインしているか確認してください。",
     courseCreated: "コースを追加しました：{name}",
     courseCreateFailed: "コースを追加できません。サーバーを確認してください。",
     studentName: "学生名",
@@ -325,8 +356,11 @@ const TRANSLATIONS = {
     submitPost: "掲示板に送信",
     sameRoomVisible: "同じルームで表示",
     boardTitle: "掲示板",
+    myWorksTitle: "自分の作品",
     switchRoom: "ルーム変更",
-    clearBoard: "掲示板を消去",
+    leaveRoom: "退出",
+  clearBoard: "掲示板を消去",
+  deleteRoom: "部屋を削除",
     searchPlaceholder: "名前やテーマを検索",
     searchLabel: "作品検索",
     sortLabel: "並び替え",
@@ -335,6 +369,8 @@ const TRANSLATIONS = {
     sortName: "名前",
     emptyTitle: "このコースにはまだ作品がありません",
     emptyText: "学生が送信すると、ここに表示されます。",
+    myWorksEmptyTitle: "まだ作品を送信していません",
+    myWorksEmptyText: "送信した手書き作品がここに表示されます。",
     roomPrefix: "ルーム",
     postCount: "{count} 件",
     roomSync: "同期中",
@@ -342,6 +378,7 @@ const TRANSLATIONS = {
     notInRoom: "未入室",
     helperLocked: "先にルームへ入ってください。",
     helperInRoom: "書き終わったら送信します。同じルーム、同じコースの人が見られます。",
+    helperInRoomStudent: "書き終わったら送信します。先生が確認でき、自分の作品も見られます。",
     invalidRoom: "ルーム番号は 4 から 8 桁の数字です。",
     roomNotFound: "このルームはまだ作成されていません。先生が先に設定したか確認してください。",
     roomCheckFailed: "ルームを確認できません。サーバーが起動しているか確認してください。",
@@ -364,7 +401,7 @@ const TRANSLATIONS = {
     title: "Bảng phòng luyện viết tay tiếng Trung",
     eyebrow: "Luyện viết tay trong lớp",
     appTitle: "Bảng phòng luyện viết tay tiếng Trung",
-    languageLabel: "Ngôn ngữ giao diện",
+    languageLabel: "Ngôn ngữ",
     roomPassword: "Mã phòng",
     joinHeadline: "Giáo viên đặt số, học sinh nhập để vào cùng một bảng",
     teacher: "Giáo viên",
@@ -386,9 +423,12 @@ const TRANSLATIONS = {
     courseFolder: "Thư mục lớp học",
     defaultCourse: "Lớp mặc định",
     selectCourse: "Chọn lớp",
-    newCourseName: "Thư mục lớp mới",
+    newCourseName: "Tên lớp học",
     newCoursePlaceholder: "Ví dụ: Lớp 3 Bài 1",
     addCourse: "Thêm",
+    renameCourse: "Đổi tên",
+    courseRenamed: "Đã đổi tên lớp: {name}",
+    courseRenameFailed: "Không thể đổi tên lớp. Hãy kiểm tra tài khoản giáo viên đã đăng nhập.",
     courseCreated: "Đã thêm lớp: {name}",
     courseCreateFailed: "Không thể thêm lớp. Hãy kiểm tra máy chủ.",
     studentName: "Tên học sinh",
@@ -410,8 +450,11 @@ const TRANSLATIONS = {
     submitPost: "Gửi lên bảng",
     sameRoomVisible: "Hiển thị trong cùng phòng",
     boardTitle: "Bảng",
+    myWorksTitle: "Bài của em",
     switchRoom: "Đổi phòng",
-    clearBoard: "Xóa bảng",
+    leaveRoom: "Rời khỏi",
+  clearBoard: "Xóa bảng",
+  deleteRoom: "Xóa phòng",
     searchPlaceholder: "Tìm tên hoặc chủ đề",
     searchLabel: "Tìm bài viết",
     sortLabel: "Sắp xếp",
@@ -420,6 +463,8 @@ const TRANSLATIONS = {
     sortName: "Tên",
     emptyTitle: "Lớp này chưa có bài",
     emptyText: "Bài viết tay của học sinh sẽ xuất hiện ở đây sau khi gửi.",
+    myWorksEmptyTitle: "Em chưa gửi bài",
+    myWorksEmptyText: "Bài viết tay em đã gửi sẽ xuất hiện ở đây.",
     roomPrefix: "Phòng",
     postCount: "{count} bài",
     roomSync: "Đồng bộ phòng",
@@ -427,6 +472,7 @@ const TRANSLATIONS = {
     notInRoom: "Chưa vào phòng",
     helperLocked: "Hãy vào phòng trước khi viết.",
     helperInRoom: "Gửi sau khi viết xong. Mọi người cùng phòng và cùng lớp sẽ thấy.",
+    helperInRoomStudent: "Gửi sau khi viết xong. Giáo viên sẽ thấy, và em sẽ thấy bài của mình.",
     invalidRoom: "Mã phòng phải gồm 4 đến 8 chữ số.",
     roomNotFound: "Phòng này chưa được tạo. Hãy kiểm tra giáo viên đã đặt mã này trước chưa.",
     roomCheckFailed: "Không thể kiểm tra phòng. Hãy xác nhận máy chủ đang chạy.",
@@ -450,88 +496,113 @@ const TRANSLATIONS = {
 const canvas = document.querySelector("#writingCanvas");
 const ctx = canvas.getContext("2d", { willReadFrequently: true });
 const canvasWrap = document.querySelector(".canvas-wrap");
+const canvasStage = document.querySelector(".canvas-stage");
 const form = document.querySelector("#postForm");
 Object.assign(TRANSLATIONS["zh-Hans"], {
   teacherNotSignedIn: "尚未登入老师账号",
   teacherSignedIn: "已登入：{name}",
+  teacherDashboardEyebrow: "老师主画面",
+  teacherDashboardTitle: "新建房间或开启历史课程",
   teacherUsernameLabel: "账号",
   teacherUsernamePlaceholder: "例如：teacher01",
   teacherPasswordLabel: "密码",
   teacherPasswordPlaceholder: "至少 6 个字",
   loginTeacher: "登入",
   registerTeacher: "建立账号",
+  resetTeacherPassword: "忘记密码",
   logoutTeacher: "登出",
   loginRequired: "请先登入老师账号，才能建立房间。",
   loginSuccess: "老师账号已登入。",
   registerSuccess: "账号已建立并登入。",
+  resetPasswordSuccess: "密码已重设并登入。",
+  resetPasswordFailed: "无法重设密码，请确认老师姓名、账号，并输入至少 6 个字的新密码。",
+  resetPasswordRequired: "请输入老师姓名、账号和新密码，再按忘记密码。",
     loginFailed: "登入失败，请确认账号和密码。",
     registerFailed: "建立账号失败，账号可能已被使用，或密码少于 6 个字。",
     teacherSessionExpired: "老师登入已失效，请重新登入后再建立房间。",
-  historyTitle: "历史课程",
-  historyEmpty: "登入后建立的课程会显示在这里。",
+  historyTitle: "课程资料夹",
+  historyEmpty: "登入后建立的课程资料夹会显示在这里。",
   openHistoryRoom: "进入",
 });
 
 Object.assign(TRANSLATIONS["zh-Hant"], {
   teacherNotSignedIn: "尚未登入老師帳號",
   teacherSignedIn: "已登入：{name}",
+  teacherDashboardEyebrow: "老師主畫面",
+  teacherDashboardTitle: "新建房間或開啟歷史課程",
   teacherUsernameLabel: "帳號",
   teacherUsernamePlaceholder: "例如：teacher01",
   teacherPasswordLabel: "密碼",
   teacherPasswordPlaceholder: "至少 6 個字",
   loginTeacher: "登入",
   registerTeacher: "建立帳號",
+  resetTeacherPassword: "忘記密碼",
   logoutTeacher: "登出",
   loginRequired: "請先登入老師帳號，才能建立房間。",
   loginSuccess: "老師帳號已登入。",
   registerSuccess: "帳號已建立並登入。",
+  resetPasswordSuccess: "密碼已重設並登入。",
+  resetPasswordFailed: "無法重設密碼，請確認老師姓名、帳號，並輸入至少 6 個字的新密碼。",
+  resetPasswordRequired: "請輸入老師姓名、帳號和新密碼，再按忘記密碼。",
     loginFailed: "登入失敗，請確認帳號和密碼。",
     registerFailed: "建立帳號失敗，帳號可能已被使用，或密碼少於 6 個字。",
     teacherSessionExpired: "老師登入已失效，請重新登入後再建立房間。",
-  historyTitle: "歷史課程",
-  historyEmpty: "登入後建立的課程會顯示在這裡。",
+  historyTitle: "課程資料夾",
+  historyEmpty: "登入後建立的課程資料夾會顯示在這裡。",
   openHistoryRoom: "進入",
 });
 
 Object.assign(TRANSLATIONS.en, {
   teacherNotSignedIn: "Teacher account is not signed in",
   teacherSignedIn: "Signed in: {name}",
+  teacherDashboardEyebrow: "Teacher dashboard",
+  teacherDashboardTitle: "Create a room or open course history",
   teacherUsernameLabel: "Account",
   teacherUsernamePlaceholder: "Example: teacher01",
   teacherPasswordLabel: "Password",
   teacherPasswordPlaceholder: "At least 6 characters",
   loginTeacher: "Log in",
   registerTeacher: "Create account",
+  resetTeacherPassword: "Forgot password",
   logoutTeacher: "Log out",
   loginRequired: "Log in with a teacher account before creating a room.",
   loginSuccess: "Teacher account signed in.",
   registerSuccess: "Account created and signed in.",
+  resetPasswordSuccess: "Password reset and signed in.",
+  resetPasswordFailed: "Could not reset the password. Check the teacher name, account, and use a new password with at least 6 characters.",
+  resetPasswordRequired: "Enter teacher name, account, and a new password, then press Forgot password.",
   loginFailed: "Login failed. Check the account and password.",
   registerFailed: "Could not create the account. It may already exist, or the password is too short.",
   teacherSessionExpired: "Teacher login expired. Please log in again before creating a room.",
-  historyTitle: "Course history",
-  historyEmpty: "Rooms created after login will appear here.",
+  historyTitle: "Course folders",
+  historyEmpty: "Course folders created after login will appear here.",
   openHistoryRoom: "Open",
 });
 
 Object.assign(TRANSLATIONS.ja, {
   teacherNotSignedIn: "先生アカウントは未ログインです",
   teacherSignedIn: "ログイン中：{name}",
+  teacherDashboardEyebrow: "先生メニュー",
+  teacherDashboardTitle: "部屋を作成、または履歴を開く",
   teacherUsernameLabel: "アカウント",
   teacherUsernamePlaceholder: "例：teacher01",
   teacherPasswordLabel: "パスワード",
   teacherPasswordPlaceholder: "6文字以上",
   loginTeacher: "ログイン",
   registerTeacher: "アカウント作成",
+  resetTeacherPassword: "パスワードを忘れた",
   logoutTeacher: "ログアウト",
   loginRequired: "部屋を作成する前に先生アカウントでログインしてください。",
   loginSuccess: "先生アカウントでログインしました。",
   registerSuccess: "アカウントを作成してログインしました。",
+  resetPasswordSuccess: "パスワードを再設定してログインしました。",
+  resetPasswordFailed: "パスワードを再設定できません。先生名、アカウントを確認し、6文字以上の新しいパスワードを入力してください。",
+  resetPasswordRequired: "先生名、アカウント、新しいパスワードを入力してから、パスワードを忘れたボタンを押してください。",
   loginFailed: "ログインできません。アカウントとパスワードを確認してください。",
   registerFailed: "アカウントを作成できません。既に使用中、またはパスワードが短すぎます。",
   teacherSessionExpired: "先生ログインの有効期限が切れました。もう一度ログインしてください。",
-  historyTitle: "授業履歴",
-  historyEmpty: "ログイン後に作成した部屋がここに表示されます。",
+  historyTitle: "授業フォルダ",
+  historyEmpty: "ログイン後に作成した授業フォルダがここに表示されます。",
   openHistoryRoom: "開く",
   expandPost: "作品を拡大",
   closePost: "拡大表示を閉じる",
@@ -543,21 +614,27 @@ Object.assign(TRANSLATIONS.ja, {
 Object.assign(TRANSLATIONS.vi, {
   teacherNotSignedIn: "Chưa đăng nhập tài khoản giáo viên",
   teacherSignedIn: "Đã đăng nhập: {name}",
+  teacherDashboardEyebrow: "Màn hình giáo viên",
+  teacherDashboardTitle: "Tạo phòng hoặc mở lịch sử lớp học",
   teacherUsernameLabel: "Tài khoản",
   teacherUsernamePlaceholder: "Ví dụ: teacher01",
   teacherPasswordLabel: "Mật khẩu",
   teacherPasswordPlaceholder: "Ít nhất 6 ký tự",
   loginTeacher: "Đăng nhập",
   registerTeacher: "Tạo tài khoản",
+  resetTeacherPassword: "Quên mật khẩu",
   logoutTeacher: "Đăng xuất",
   loginRequired: "Hãy đăng nhập tài khoản giáo viên trước khi tạo phòng.",
   loginSuccess: "Đã đăng nhập tài khoản giáo viên.",
   registerSuccess: "Đã tạo tài khoản và đăng nhập.",
+  resetPasswordSuccess: "Đã đặt lại mật khẩu và đăng nhập.",
+  resetPasswordFailed: "Không thể đặt lại mật khẩu. Hãy kiểm tra tên giáo viên, tài khoản và nhập mật khẩu mới ít nhất 6 ký tự.",
+  resetPasswordRequired: "Nhập tên giáo viên, tài khoản và mật khẩu mới, rồi bấm Quên mật khẩu.",
   loginFailed: "Đăng nhập thất bại. Hãy kiểm tra tài khoản và mật khẩu.",
   registerFailed: "Không thể tạo tài khoản. Tài khoản có thể đã tồn tại hoặc mật khẩu quá ngắn.",
   teacherSessionExpired: "Phiên đăng nhập giáo viên đã hết hạn. Hãy đăng nhập lại.",
-  historyTitle: "Lịch sử lớp học",
-  historyEmpty: "Các phòng tạo sau khi đăng nhập sẽ hiện ở đây.",
+  historyTitle: "Thu muc lop hoc",
+  historyEmpty: "Thu muc lop hoc tao sau khi dang nhap se hien o day.",
   openHistoryRoom: "Mở",
   expandPost: "Phóng to bài viết",
   closePost: "Đóng bài viết phóng to",
@@ -566,11 +643,270 @@ Object.assign(TRANSLATIONS.vi, {
   deletePostFailed: "Xóa thất bại. Hãy kiểm tra tài khoản giáo viên đã đăng nhập.",
 });
 
+Object.assign(TRANSLATIONS["zh-Hans"], {
+  canvasShrinkTitle: "缩小手写区",
+  canvasGrowTitle: "放大手写区",
+  canvasScaleTitle: "画布缩放比例",
+});
+
+Object.assign(TRANSLATIONS["zh-Hant"], {
+  canvasShrinkTitle: "縮小手寫區",
+  canvasGrowTitle: "放大手寫區",
+  canvasScaleTitle: "畫布縮放比例",
+});
+
+Object.assign(TRANSLATIONS.en, {
+  canvasShrinkTitle: "Make handwriting area smaller",
+  canvasGrowTitle: "Make handwriting area larger",
+  canvasScaleTitle: "Canvas zoom",
+});
+
+Object.assign(TRANSLATIONS.ja, {
+  canvasShrinkTitle: "手書きエリアを小さくする",
+  canvasGrowTitle: "手書きエリアを大きくする",
+  canvasScaleTitle: "キャンバス倍率",
+});
+
+Object.assign(TRANSLATIONS.vi, {
+  canvasShrinkTitle: "Thu nhỏ vùng viết tay",
+  canvasGrowTitle: "Phóng to vùng viết tay",
+  canvasScaleTitle: "Tỷ lệ bảng viết",
+});
+
+Object.assign(TRANSLATIONS["zh-Hans"], {
+  deleteCourse: "删除资料夹",
+  courseDeleted: "已删除资料夹：{name}",
+  courseDeleteFailed: "无法删除资料夹，请确认老师账号已登入。",
+  confirmDeleteCourse: "确定要删除资料夹「{name}」吗？这个资料夹里的学生作品也会被删除。",
+});
+
+Object.assign(TRANSLATIONS["zh-Hant"], {
+  deleteCourse: "刪除資料夾",
+  courseDeleted: "已刪除資料夾：{name}",
+  courseDeleteFailed: "無法刪除資料夾，請確認老師帳號已登入。",
+  confirmDeleteCourse: "確定要刪除資料夾「{name}」嗎？這個資料夾裡的學生作品也會被刪除。",
+});
+
+Object.assign(TRANSLATIONS.en, {
+  deleteCourse: "Delete course",
+  courseDeleted: "Course deleted: {name}",
+  courseDeleteFailed: "Could not delete the course. Check that the teacher account is signed in.",
+  confirmDeleteCourse: "Delete \"{name}\"? Student works in this course will also be deleted.",
+});
+
+Object.assign(TRANSLATIONS.ja, {
+  deleteCourse: "\u30b3\u30fc\u30b9\u524a\u9664",
+  courseDeleted: "\u30b3\u30fc\u30b9\u3092\u524a\u9664\u3057\u307e\u3057\u305f\uff1a{name}",
+  courseDeleteFailed: "\u30b3\u30fc\u30b9\u3092\u524a\u9664\u3067\u304d\u307e\u305b\u3093\u3002\u6559\u5e2b\u30a2\u30ab\u30a6\u30f3\u30c8\u306b\u30ed\u30b0\u30a4\u30f3\u3057\u3066\u3044\u308b\u304b\u78ba\u8a8d\u3057\u3066\u304f\u3060\u3055\u3044\u3002",
+  confirmDeleteCourse: "\u300c{name}\u300d\u3092\u524a\u9664\u3057\u307e\u3059\u304b\uff1f\u3053\u306e\u30b3\u30fc\u30b9\u306e\u751f\u5f92\u4f5c\u54c1\u3082\u524a\u9664\u3055\u308c\u307e\u3059\u3002",
+});
+
+Object.assign(TRANSLATIONS.vi, {
+  deleteCourse: "Xoa lop",
+  courseDeleted: "Da xoa lop: {name}",
+  courseDeleteFailed: "Khong the xoa lop. Hay kiem tra tai khoan giao vien da dang nhap.",
+  confirmDeleteCourse: "Xoa \"{name}\"? Bai viet cua hoc sinh trong lop nay cung se bi xoa.",
+});
+
+Object.assign(TRANSLATIONS["zh-Hans"], {
+  roomNameLabel: "\u623f\u95f4\u540d\u79f0",
+  roomNamePlaceholder: "\u4f8b\u5982\uff1a\u5468\u4e09\u4e2d\u6587\u8bfe",
+});
+
+Object.assign(TRANSLATIONS["zh-Hant"], {
+  roomNameLabel: "\u623f\u9593\u540d\u7a31",
+  roomNamePlaceholder: "\u4f8b\u5982\uff1a\u9031\u4e09\u4e2d\u6587\u8ab2",
+});
+
+Object.assign(TRANSLATIONS.en, {
+  roomNameLabel: "Room name",
+  roomNamePlaceholder: "Example: Wednesday Chinese class",
+});
+
+Object.assign(TRANSLATIONS.ja, {
+  roomNameLabel: "\u90e8\u5c4b\u540d",
+  roomNamePlaceholder: "\u4f8b\uff1a\u6c34\u66dc\u4e2d\u56fd\u8a9e\u30af\u30e9\u30b9",
+});
+
+Object.assign(TRANSLATIONS.vi, {
+  roomNameLabel: "Ten phong",
+  roomNamePlaceholder: "Vi du: Lop tieng Trung thu Tu",
+});
+
+Object.assign(TRANSLATIONS["zh-Hans"], {
+  renameRoom: "\u4fee\u6539\u623f\u95f4\u540d\u79f0",
+  renameRoomPrompt: "\u8bf7\u8f93\u5165\u65b0\u7684\u623f\u95f4\u540d\u79f0",
+  roomRenamed: "\u5df2\u4fee\u6539\u623f\u95f4\u540d\u79f0\u3002",
+  roomRenameFailed: "\u65e0\u6cd5\u4fee\u6539\u623f\u95f4\u540d\u79f0\uff0c\u8bf7\u786e\u8ba4\u8001\u5e08\u5e10\u53f7\u5df2\u767b\u5165\u3002",
+});
+
+Object.assign(TRANSLATIONS["zh-Hant"], {
+  renameRoom: "\u4fee\u6539\u623f\u9593\u540d\u7a31",
+  renameRoomPrompt: "\u8acb\u8f38\u5165\u65b0\u7684\u623f\u9593\u540d\u7a31",
+  roomRenamed: "\u5df2\u4fee\u6539\u623f\u9593\u540d\u7a31\u3002",
+  roomRenameFailed: "\u7121\u6cd5\u4fee\u6539\u623f\u9593\u540d\u7a31\uff0c\u8acb\u78ba\u8a8d\u8001\u5e2b\u5e33\u865f\u5df2\u767b\u5165\u3002",
+});
+
+Object.assign(TRANSLATIONS.en, {
+  renameRoom: "Rename room",
+  renameRoomPrompt: "Enter the new room name",
+  roomRenamed: "Room name updated.",
+  roomRenameFailed: "Could not rename the room. Check that the teacher account is signed in.",
+});
+
+Object.assign(TRANSLATIONS.ja, {
+  renameRoom: "\u90e8\u5c4b\u540d\u3092\u5909\u66f4",
+  renameRoomPrompt: "\u65b0\u3057\u3044\u90e8\u5c4b\u540d\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044",
+  roomRenamed: "\u90e8\u5c4b\u540d\u3092\u5909\u66f4\u3057\u307e\u3057\u305f\u3002",
+  roomRenameFailed: "\u90e8\u5c4b\u540d\u3092\u5909\u66f4\u3067\u304d\u307e\u305b\u3093\u3002\u6559\u5e2b\u30a2\u30ab\u30a6\u30f3\u30c8\u3092\u78ba\u8a8d\u3057\u3066\u304f\u3060\u3055\u3044\u3002",
+});
+
+Object.assign(TRANSLATIONS.vi, {
+  renameRoom: "Doi ten phong",
+  renameRoomPrompt: "Nhap ten phong moi",
+  roomRenamed: "Da doi ten phong.",
+  roomRenameFailed: "Khong the doi ten phong. Hay kiem tra tai khoan giao vien da dang nhap.",
+});
+
+Object.assign(TRANSLATIONS["zh-Hans"], {
+  cancelEdit: "\u53d6\u6d88",
+  saveEdit: "\u50a8\u5b58",
+});
+
+Object.assign(TRANSLATIONS["zh-Hant"], {
+  cancelEdit: "\u53d6\u6d88",
+  saveEdit: "\u5132\u5b58",
+});
+
+Object.assign(TRANSLATIONS.en, {
+  cancelEdit: "Cancel",
+  saveEdit: "Save",
+});
+
+Object.assign(TRANSLATIONS.ja, {
+  cancelEdit: "\u30ad\u30e3\u30f3\u30bb\u30eb",
+  saveEdit: "\u4fdd\u5b58",
+});
+
+Object.assign(TRANSLATIONS.vi, {
+  cancelEdit: "Huy",
+  saveEdit: "Luu",
+});
+
+Object.assign(TRANSLATIONS["zh-Hans"], {
+  roomPassword: "课程密码",
+  joinHeadline: "学生输入课程密码后，只会进入该课程的公布栏",
+  roomCodeLabel: "课程数字密码",
+  roomCodePlaceholder: "例如：246801",
+  courseCodeLabel: "课程密码",
+  courseCodePlaceholder: "系统自动产生",
+  enterRoom: "进入课程",
+  roomNote: "老师进入课程不需要密码；系统会为每个课程自动产生 6 位数字密码，给学生输入使用。",
+  invalidRoom: "课程密码必须是 6 位数字。",
+  roomNotFound: "找不到这个课程。请确认老师已经先建立课程密码。",
+  roomCheckFailed: "无法确认课程，请确认服务器是否开启，或课程密码是否已被使用。",
+  creatingRoom: "正在建立房间与课程...",
+  checkingRoom: "正在检查课程...",
+  helperLocked: "请先进入课程，再开始书写。",
+  helperInRoom: "写完后送出；同课程的人都会看到。",
+  helperInRoomStudent: "写完后送出；老师可以看到，你也能看到自己的作品。",
+  courseCreateFailed: "新增课程失败，请确认服务器是否开启。",
+});
+
+Object.assign(TRANSLATIONS["zh-Hant"], {
+  roomPassword: "課程密碼",
+  joinHeadline: "學生輸入課程密碼後，只會進入該課程的公佈欄",
+  roomCodeLabel: "課程數字密碼",
+  roomCodePlaceholder: "例如：246801",
+  courseCodeLabel: "課程密碼",
+  courseCodePlaceholder: "系統自動產生",
+  enterRoom: "進入課程",
+  roomNote: "老師進入課程不需要密碼；系統會為每個課程自動產生 6 位數字密碼，給學生輸入使用。",
+  invalidRoom: "課程密碼必須是 6 位數字。",
+  roomNotFound: "找不到這個課程。請確認老師已經先建立課程密碼。",
+  roomCheckFailed: "無法確認課程，請確認伺服器是否開啟，或課程密碼是否已被使用。",
+  creatingRoom: "正在建立房間與課程...",
+  checkingRoom: "正在檢查課程...",
+  helperLocked: "請先進入課程，再開始書寫。",
+  helperInRoom: "寫完後送出；同課程的人都會看到。",
+  helperInRoomStudent: "寫完後送出；老師可以看到，你也能看到自己的作品。",
+  courseCreateFailed: "新增課程失敗，請確認伺服器是否開啟。",
+});
+
+Object.assign(TRANSLATIONS.en, {
+  roomPassword: "Course code",
+  joinHeadline: "Students enter a course code and only join that course board",
+  roomCodeLabel: "Numeric course code",
+  roomCodePlaceholder: "Example: 246801",
+  courseCodeLabel: "Course code",
+  courseCodePlaceholder: "Generated automatically",
+  enterRoom: "Enter course",
+  roomNote: "Teachers do not need a password to enter. The system creates a 6 digit course code for students.",
+  invalidRoom: "The course code must be 6 digits.",
+  roomNotFound: "This course was not found. Check that the teacher has created the course code first.",
+  roomCheckFailed: "Could not check the course. Confirm the server is running or that the code is not already used.",
+  creatingRoom: "Creating room and course...",
+  checkingRoom: "Checking course...",
+  helperLocked: "Enter a course before handwriting.",
+  helperInRoom: "Submit when finished. Everyone in this course will see it.",
+  helperInRoomStudent: "Submit when finished. The teacher can see it, and you can see your own work.",
+  courseCreateFailed: "Could not add the course. Confirm the server is running.",
+});
+
+Object.assign(TRANSLATIONS.ja, {
+  roomPassword: "授業コード",
+  joinHeadline: "学生は授業コードを入力し、その授業の掲示板だけに入ります",
+  roomCodeLabel: "数字の授業コード",
+  roomCodePlaceholder: "例：246801",
+  courseCodeLabel: "授業コード",
+  courseCodePlaceholder: "自動生成",
+  enterRoom: "授業に入る",
+  roomNote: "先生はパスワードなしで授業に入れます。学生用の 6 桁コードは自動で作成されます。",
+  invalidRoom: "授業コードは 6 桁の数字です。",
+  roomNotFound: "この授業が見つかりません。先生が先に授業コードを作成したか確認してください。",
+  roomCheckFailed: "授業を確認できません。サーバーまたはコードの重複を確認してください。",
+  creatingRoom: "部屋と授業を作成中...",
+  checkingRoom: "授業を確認中...",
+  helperLocked: "先に授業に入ってから書いてください。",
+  helperInRoom: "書き終わったら送信します。同じ授業の人が見られます。",
+  helperInRoomStudent: "書き終わったら送信します。先生が確認でき、自分の作品も見られます。",
+  courseCreateFailed: "授業を追加できません。サーバーを確認してください。",
+});
+
+Object.assign(TRANSLATIONS.vi, {
+  roomPassword: "Ma lop hoc",
+  joinHeadline: "Hoc sinh nhap ma lop va chi vao bang cua lop do",
+  roomCodeLabel: "Ma lop bang so",
+  roomCodePlaceholder: "Vi du: 246801",
+  courseCodeLabel: "Ma lop hoc",
+  courseCodePlaceholder: "Tu dong tao",
+  enterRoom: "Vao lop",
+  roomNote: "Giao vien vao lop khong can mat ma. He thong tu tao ma 6 chu so cho hoc sinh.",
+  invalidRoom: "Ma lop phai la 6 chu so.",
+  roomNotFound: "Khong tim thay lop nay. Hay kiem tra giao vien da tao ma lop truoc chua.",
+  roomCheckFailed: "Khong the kiem tra lop. Hay xac nhan may chu dang chay hoac ma chua bi dung.",
+  creatingRoom: "Dang tao phong va lop...",
+  checkingRoom: "Dang kiem tra lop...",
+  helperLocked: "Hay vao lop truoc khi viet tay.",
+  helperInRoom: "Gui sau khi viet xong. Moi nguoi trong lop nay se thay.",
+  helperInRoomStudent: "Gui sau khi viet xong. Giao vien se thay, va em se thay bai cua minh.",
+  courseCreateFailed: "Khong the them lop. Hay xac nhan may chu dang chay.",
+});
+
 const roomForm = document.querySelector("#roomForm");
 const roomCodeInput = document.querySelector("#roomCode");
+const roomEntry = document.querySelector("#roomEntry");
 const roomMessage = document.querySelector("#roomMessage");
 const joinPanel = document.querySelector("#joinPanel");
+const teacherDashboard = document.querySelector("#teacherDashboard");
+const teacherRoomForm = document.querySelector("#teacherRoomForm");
+const teacherRoomCodeInput = document.querySelector("#teacherRoomCode");
+const teacherRoomNameInput = document.querySelector("#teacherRoomName");
+const teacherDashboardMessage = document.querySelector("#teacherDashboardMessage");
+const teacherDashboardStatusText = document.querySelector("#teacherDashboardStatusText");
+const teacherDashboardLogoutButton = document.querySelector("#teacherDashboardLogoutButton");
 const classroomLayout = document.querySelector("#classroomLayout");
+const writerPanel = document.querySelector(".writer-panel");
 const teacherLoginCard = document.querySelector("#teacherLoginCard");
 const teacherName = document.querySelector("#teacherName");
 const teacherUsername = document.querySelector("#teacherUsername");
@@ -579,32 +915,51 @@ const teacherFields = document.querySelector("#teacherFields");
 const teacherStatusText = document.querySelector("#teacherStatusText");
 const teacherLoginButton = document.querySelector("#teacherLoginButton");
 const teacherRegisterButton = document.querySelector("#teacherRegisterButton");
+const teacherResetButton = document.querySelector("#teacherResetButton");
 const teacherLogoutButton = document.querySelector("#teacherLogoutButton");
 const teacherHistory = document.querySelector("#teacherHistory");
 const studentName = document.querySelector("#studentName");
 const promptText = document.querySelector("#promptText");
 const coursePanel = document.querySelector("#coursePanel");
+const courseControls = document.querySelector(".course-controls");
 const courseForm = document.querySelector("#courseForm");
 const courseSelect = document.querySelector("#courseSelect");
 const courseNameInput = document.querySelector("#courseNameInput");
+const courseCodeInput = document.querySelector("#courseCodeInput");
+const renameCourseButton = document.querySelector("#renameCourseButton");
+const deleteCourseButton = document.querySelector("#deleteCourseButton");
 const activeCourseName = document.querySelector("#activeCourseName");
 const boardCourseLabel = document.querySelector("#boardCourseLabel");
+const boardTitle = document.querySelector(".board-title-row h2");
 const brushSize = document.querySelector("#brushSize");
 const inkColor = document.querySelector("#inkColor");
+const canvasShrinkButton = document.querySelector("#canvasShrinkButton");
+const canvasGrowButton = document.querySelector("#canvasGrowButton");
+const canvasScaleInput = document.querySelector("#canvasScaleInput");
+const canvasScaleValue = document.querySelector("#canvasScaleValue");
 const helperText = document.querySelector("#helperText");
 const boardList = document.querySelector("#boardList");
 const boardPanel = document.querySelector(".board-panel");
 const fullscreenBoardButton = document.querySelector("#fullscreenBoardButton");
+const leaveRoomButton = document.querySelector("#leaveRoomButton");
+const renameRoomButton = document.querySelector("#renameRoomButton");
 const endCourseButton = document.querySelector("#endCourseButton");
+const deleteRoomButton = document.querySelector("#deleteRoomButton");
 const searchInput = document.querySelector("#searchInput");
 const sortSelect = document.querySelector("#sortSelect");
 const emptyTemplate = document.querySelector("#emptyTemplate");
 const languageSelect = document.querySelector("#languageSelect");
+const roomNameModal = document.querySelector("#roomNameModal");
+const roomNameForm = document.querySelector("#roomNameForm");
+const roomNameModalInput = document.querySelector("#roomNameModalInput");
+const roomNameCancelButton = document.querySelector("#roomNameCancelButton");
 
 let posts = [];
 let courses = [];
+let teacherRooms = [];
 let teacherSession = loadTeacherProfile();
 let activeRoom = "";
+let activeRoomName = "";
 let activeRole = "teacher";
 let activeCourseId = "default";
 let currentLanguage = localStorage.getItem(LANGUAGE_KEY) || "zh-Hant";
@@ -612,12 +967,25 @@ let useServer = true;
 let mode = "draw";
 let drawing = false;
 let lastPoint = null;
+let lastMidPoint = null;
+let smoothPoint = null;
 let hasInk = false;
 let undoStack = [];
 let resizeTimer = null;
+let studentNameRefreshTimer = null;
+let canvasBaseWidth = 0;
+let canvasBaseHeight = 0;
+let canvasContentWidth = 0;
+let canvasContentHeight = 0;
+let canvasScalePercent = 100;
+const MASTER_CANVAS_SCALE = 2;
+const CANVAS_WORLD_FACTOR = 3;
+const masterCanvas = document.createElement("canvas");
+const masterCtx = masterCanvas.getContext("2d", { willReadFrequently: true });
 let refreshTimer = null;
 let courseRefreshTimer = null;
 let isBoardFullscreen = false;
+let handlingBrowserBack = false;
 
 function t(key, values = {}) {
   const dictionary = TRANSLATIONS[currentLanguage] || TRANSLATIONS["zh-Hant"];
@@ -669,6 +1037,39 @@ function passwordRotateFailedMessage() {
   return messages[currentLanguage] || messages["zh-Hant"];
 }
 
+function confirmDeleteRoomMessage(code) {
+  const messages = {
+    "zh-Hans": `确定要删除房间 ${code} 吗？房间里的课程和作品都会删除。`,
+    "zh-Hant": `確定要刪除房間 ${code} 嗎？房間裡的課程和作品都會刪除。`,
+    en: `Delete room ${code}? Courses and student works in this room will be deleted.`,
+    ja: `部屋 ${code} を削除しますか？この部屋の授業と作品も削除されます。`,
+    vi: `Xóa phòng ${code}? Các lớp học và bài viết trong phòng này cũng sẽ bị xóa.`,
+  };
+  return messages[currentLanguage] || messages["zh-Hant"];
+}
+
+function roomDeletedMessage(code) {
+  const messages = {
+    "zh-Hans": `房间 ${code} 已删除。`,
+    "zh-Hant": `房間 ${code} 已刪除。`,
+    en: `Room ${code} has been deleted.`,
+    ja: `部屋 ${code} を削除しました。`,
+    vi: `Đã xóa phòng ${code}.`,
+  };
+  return messages[currentLanguage] || messages["zh-Hant"];
+}
+
+function deleteRoomFailedMessage() {
+  const messages = {
+    "zh-Hans": "删除房间失败，请确认老师账号是否已登入。",
+    "zh-Hant": "刪除房間失敗，請確認老師帳號是否已登入。",
+    en: "Could not delete the room. Check that the teacher account is signed in.",
+    ja: "部屋を削除できません。先生アカウントでログインしているか確認してください。",
+    vi: "Không thể xóa phòng. Hãy kiểm tra tài khoản giáo viên đã đăng nhập.",
+  };
+  return messages[currentLanguage] || messages["zh-Hant"];
+}
+
 function applyLanguage(language) {
   currentLanguage = TRANSLATIONS[language] ? language : "zh-Hant";
   localStorage.setItem(LANGUAGE_KEY, currentLanguage);
@@ -683,7 +1084,11 @@ function applyLanguage(language) {
     element.placeholder = t(element.dataset.i18nPlaceholder);
   });
   document.querySelectorAll("[data-i18n-title]").forEach((element) => {
-    element.title = t(element.dataset.i18nTitle);
+    const label = t(element.dataset.i18nTitle);
+    element.title = label;
+    if (element.hasAttribute("aria-label")) {
+      element.setAttribute("aria-label", label);
+    }
   });
   document.querySelectorAll("[data-i18n-aria-label]").forEach((element) => {
     element.setAttribute("aria-label", t(element.dataset.i18nAriaLabel));
@@ -730,6 +1135,7 @@ function updateTeacherStatus() {
   const token = localStorage.getItem(TEACHER_TOKEN_KEY);
   const label = teacherSession?.name || teacherSession?.username || "";
   teacherStatusText.textContent = label ? t("teacherSignedIn", { name: label }) : t("teacherNotSignedIn");
+  teacherDashboardStatusText.textContent = label ? t("teacherSignedIn", { name: label }) : t("teacherNotSignedIn");
   teacherFields.hidden = Boolean(token && label);
   teacherLogoutButton.hidden = !token;
   teacherHistory.hidden = !token;
@@ -744,6 +1150,13 @@ function authHeaders() {
   return token ? { "X-Teacher-Token": token } : {};
 }
 
+async function continueAfterTeacherAuth(successKey) {
+  activeRole = "teacher";
+  roomMessage.textContent = "";
+  teacherDashboardMessage.textContent = t(successKey);
+  await openTeacherDefaultClassroom();
+}
+
 async function teacherAuth(mode) {
   const payload = {
     name: teacherName.value.trim(),
@@ -756,6 +1169,7 @@ async function teacherAuth(mode) {
   }
   teacherLoginButton.disabled = true;
   teacherRegisterButton.disabled = true;
+  teacherResetButton.disabled = true;
   try {
     const result = await apiRequest(`/api/teacher/${mode}`, {
       method: "POST",
@@ -764,13 +1178,45 @@ async function teacherAuth(mode) {
     localStorage.setItem(TEACHER_TOKEN_KEY, result.token);
     saveTeacherProfile(result.teacher || {});
     teacherPassword.value = "";
-    roomMessage.textContent = t(mode === "register" ? "registerSuccess" : "loginSuccess");
-    await loadTeacherHistory();
+    await continueAfterTeacherAuth(mode === "register" ? "registerSuccess" : "loginSuccess");
   } catch {
     roomMessage.textContent = t(mode === "register" ? "registerFailed" : "loginFailed");
   } finally {
     teacherLoginButton.disabled = false;
     teacherRegisterButton.disabled = false;
+    teacherResetButton.disabled = false;
+  }
+}
+
+async function resetTeacherPassword() {
+  const payload = {
+    name: teacherName.value.trim(),
+    username: teacherUsername.value.trim(),
+    password: teacherPassword.value,
+  };
+  if (!payload.name || !payload.username || !payload.password) {
+    roomMessage.textContent = t("resetPasswordRequired");
+    (payload.name ? teacherUsername : teacherName).focus();
+    return;
+  }
+  teacherLoginButton.disabled = true;
+  teacherRegisterButton.disabled = true;
+  teacherResetButton.disabled = true;
+  try {
+    const result = await apiRequest("/api/teacher/reset-password", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    localStorage.setItem(TEACHER_TOKEN_KEY, result.token);
+    saveTeacherProfile(result.teacher || {});
+    teacherPassword.value = "";
+    await continueAfterTeacherAuth("resetPasswordSuccess");
+  } catch {
+    roomMessage.textContent = t("resetPasswordFailed");
+  } finally {
+    teacherLoginButton.disabled = false;
+    teacherRegisterButton.disabled = false;
+    teacherResetButton.disabled = false;
   }
 }
 
@@ -781,12 +1227,18 @@ function logoutTeacher() {
   teacherName.value = "";
   teacherUsername.value = "";
   teacherPassword.value = "";
+  teacherRoomCodeInput.value = "";
+  teacherRoomNameInput.value = "";
+  teacherDashboardMessage.textContent = "";
   teacherHistory.replaceChildren();
   updateTeacherStatus();
+  setRoomUi();
+  updateBrowserHistory();
 }
 
 async function loadTeacherHistory() {
   if (!teacherToken()) {
+    teacherRooms = [];
     renderTeacherHistory([]);
     return;
   }
@@ -794,10 +1246,12 @@ async function loadTeacherHistory() {
     const session = await apiRequest("/api/teacher/me", { headers: authHeaders() });
     saveTeacherProfile(session.teacher || teacherSession || {});
     const data = await apiRequest("/api/teacher/history", { headers: authHeaders() });
-    renderTeacherHistory(data.rooms || []);
+    teacherRooms = data.rooms || [];
+    renderTeacherHistory(teacherRooms);
   } catch {
     localStorage.removeItem(TEACHER_TOKEN_KEY);
     teacherSession = {};
+    teacherRooms = [];
     updateTeacherStatus();
     renderTeacherHistory([]);
   }
@@ -818,30 +1272,81 @@ function renderTeacherHistory(rooms) {
     return;
   }
 
-  const list = document.createElement("div");
-  list.className = "history-list";
-  rooms.slice(0, 8).forEach((room) => {
-    const item = document.createElement("div");
-    item.className = "history-item";
-    const label = document.createElement("strong");
-    const courseNames = (room.courses || []).map((course) => course.name).filter(Boolean).slice(0, 2).join("、");
-    label.textContent = `${t("roomPrefix")} ${room.room} · ${courseNames || t("defaultCourse")}`;
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "quiet-button";
-    button.textContent = t("openHistoryRoom");
-    button.addEventListener("click", () => {
-      roomCodeInput.value = room.room;
-      enterRoom(room.room, "teacher");
-    });
-    item.append(label, button);
-    list.append(item);
+  const row = document.createElement("div");
+  row.className = "history-select-row";
+  const select = document.createElement("select");
+  select.className = "history-select";
+  select.setAttribute("aria-label", t("historyTitle"));
+  rooms.forEach((room) => {
+    const option = document.createElement("option");
+    const courseNames = (room.courses || []).map((course) => course.name).filter(Boolean).slice(0, 2).join(" / ");
+    const roomName = String(room.name || "").trim();
+    option.value = room.room;
+    option.textContent = roomName || courseNames || t("defaultCourse");
+    select.append(option);
   });
-  teacherHistory.append(list);
+  if (activeRoom && rooms.some((room) => String(room.room) === String(activeRoom))) {
+    select.value = activeRoom;
+  }
+  select.addEventListener("change", () => {
+    teacherRoomCodeInput.value = select.value;
+    const room = rooms.find((item) => item.room === select.value);
+    teacherRoomNameInput.value = String(room?.name || "");
+    enterRoom(select.value, "teacher", { existing: true });
+  });
+
+  const addButton = document.createElement("button");
+  addButton.type = "button";
+  addButton.className = "quiet-button";
+  addButton.textContent = t("addCourse");
+  addButton.addEventListener("click", () => {
+    teacherRoomNameInput.value = t("defaultCourse");
+    enterRoom("", "teacher");
+  });
+
+  const renameButton = document.createElement("button");
+  renameButton.type = "button";
+  renameButton.className = "quiet-button";
+  renameButton.textContent = t("renameCourse");
+  renameButton.addEventListener("click", renameRoom);
+
+  const deleteButton = document.createElement("button");
+  deleteButton.type = "button";
+  deleteButton.className = "quiet-button danger-button";
+  deleteButton.textContent = t("deleteCourse");
+  deleteButton.addEventListener("click", () => deleteRoom(activeRoom));
+
+  row.append(select, addButton, renameButton, deleteButton);
+  teacherHistory.append(row);
 }
 
+async function openTeacherDefaultClassroom() {
+  if (!teacherToken()) return;
+  await loadTeacherHistory();
+  const saved = loadSavedRoom();
+  if (saved?.role === "teacher" && validateRoomCode(String(saved.room || ""))) {
+    await enterRoom(String(saved.room), "teacher", { existing: true });
+    if (activeRoom) return;
+  }
+  const firstRoom = teacherRooms[0];
+  if (firstRoom?.room) {
+    await enterRoom(String(firstRoom.room), "teacher", { existing: true });
+    if (activeRoom) return;
+  }
+  teacherRoomNameInput.value = t("defaultCourse");
+  await enterRoom("", "teacher");
+}
 function activeCourse() {
   return courses.find((course) => course.id === activeCourseId) || courses[0] || { id: "default", name: t("defaultCourse") };
+}
+
+function syncCourseNameInput(force = false) {
+  if (activeRole !== "teacher" || !courseNameInput) return;
+  const name = activeCourse().name || t("defaultCourse");
+  courseNameInput.placeholder = name;
+  if (force) {
+    courseNameInput.value = name;
+  }
 }
 
 function updateBoardFullscreenUi() {
@@ -858,22 +1363,98 @@ function updateBoardFullscreenUi() {
 function setBoardFullscreen(value) {
   isBoardFullscreen = value;
   updateBoardFullscreenUi();
+  syncBoardHeight();
+}
+
+function syncBoardHeight() {
+  if (!boardPanel || !writerPanel || !classroomLayout) return;
+  const shouldUseNaturalHeight =
+    classroomLayout.hidden ||
+    isBoardFullscreen ||
+    window.matchMedia("(max-width: 1120px)").matches;
+
+  if (shouldUseNaturalHeight) {
+    boardPanel.style.removeProperty("--board-panel-height");
+    return;
+  }
+
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      const height = Math.round(writerPanel.getBoundingClientRect().height);
+      if (height > 0) {
+        boardPanel.style.setProperty("--board-panel-height", `${height}px`);
+      }
+    });
+  });
 }
 
 function roomInfoPath(roomCode) {
   return `/api/rooms/${encodeURIComponent(roomCode)}`;
 }
 
+function createRoomPath() {
+  return "/api/rooms";
+}
+
+function courseLookupPath(courseCode) {
+  return `/api/courses/by-code/${encodeURIComponent(courseCode)}`;
+}
+
+function roomDisplayLabel() {
+  const course = activeCourse();
+  const name = course.name || activeRoomName || t("defaultCourse");
+  if (activeRole === "teacher" && course.code) {
+    return `${name} · ${course.code}`;
+  }
+  return name;
+}
+
+function updateBoardCourseLabel() {
+  if (!boardCourseLabel) return;
+  boardCourseLabel.replaceChildren();
+  if (!activeRoom) {
+    boardCourseLabel.textContent = t("sameRoomVisible");
+    return;
+  }
+
+  const course = activeCourse();
+  const name = course.name || activeRoomName || t("defaultCourse");
+  const nameLine = document.createElement("span");
+  nameLine.className = "board-course-name";
+  nameLine.textContent = name;
+  boardCourseLabel.append(nameLine);
+
+  if (activeRole === "teacher" && course.code) {
+    const passwordLine = document.createElement("span");
+    passwordLine.className = "board-course-password";
+    passwordLine.textContent = `密碼: ${course.code}`;
+    boardCourseLabel.append(passwordLine);
+  }
+}
+
 function coursesPath() {
   return `/api/rooms/${encodeURIComponent(activeRoom)}/courses`;
+}
+
+function coursePath(courseId = activeCourseId) {
+  return `${coursesPath()}/${encodeURIComponent(courseId)}`;
 }
 
 function rotateRoomPath() {
   return `/api/rooms/${encodeURIComponent(activeRoom)}/rotate`;
 }
 
+function roomPath(roomCode = activeRoom) {
+  return `/api/rooms/${encodeURIComponent(roomCode)}`;
+}
+
 function coursePostsPath(courseId = activeCourseId) {
-  return `/api/rooms/${encodeURIComponent(activeRoom)}/courses/${encodeURIComponent(courseId)}/posts`;
+  const basePath = `/api/rooms/${encodeURIComponent(activeRoom)}/courses/${encodeURIComponent(courseId)}/posts`;
+  const name = studentName?.value?.trim() || "";
+  if (activeRole === "student") {
+    return `${basePath}?student=${encodeURIComponent(name)}`;
+  }
+  return basePath;
 }
 
 function singlePostPath(postId, courseId = activeCourseId) {
@@ -889,25 +1470,120 @@ function loadSavedRoom() {
 }
 
 function saveCurrentRoom() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ room: activeRoom, role: activeRole, courseId: activeCourseId }));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ room: activeRoom, roomName: activeRoomName, role: activeRole, courseId: activeCourseId }));
+}
+
+function currentViewName() {
+  if (activeRoom) return "classroom";
+  return "join";
+}
+
+function browserStateForCurrentView() {
+  return {
+    view: currentViewName(),
+    room: activeRoom || "",
+    roomName: activeRoomName || "",
+    role: activeRole || new FormData(roomForm).get("role") || "student",
+    courseId: activeCourseId || "default",
+  };
+}
+
+function updateBrowserHistory(options = {}) {
+  if (handlingBrowserBack) return;
+  const state = browserStateForCurrentView();
+  const method = options.replace ? "replaceState" : "pushState";
+  window.history[method](state, "", window.location.pathname || "/");
+}
+
+function leaveCurrentRoomForHistory() {
+  setBoardFullscreen(false);
+  activeRoom = "";
+  activeRoomName = "";
+  posts = [];
+  courses = [{ id: "default", name: t("defaultCourse") }];
+  activeCourseId = "default";
+  if (refreshTimer) window.clearInterval(refreshTimer);
+  if (courseRefreshTimer) window.clearInterval(courseRefreshTimer);
+  localStorage.removeItem(STORAGE_KEY);
+  renderCourses();
+  renderBoard();
+  resetCanvasDraft();
+}
+
+function showTeacherDashboardFromHistory() {
+  leaveCurrentRoomForHistory();
+  const teacherRole = roomForm.querySelector('input[name="role"][value="teacher"]');
+  if (teacherRole) teacherRole.checked = true;
+  activeRole = "teacher";
+  setRoomUi();
+}
+
+function showJoinFromHistory() {
+  leaveCurrentRoomForHistory();
+  const studentRole = roomForm.querySelector('input[name="role"][value="student"]');
+  if (studentRole) studentRole.checked = true;
+  activeRole = "student";
+  setRoomUi();
+}
+
+function initializeBrowserHistory() {
+  window.history.replaceState({ view: "join", role: new FormData(roomForm).get("role") || "student" }, "", window.location.pathname || "/");
+  const state = browserStateForCurrentView();
+  if (state.view !== "join") {
+    window.history.pushState(state, "", window.location.pathname || "/");
+  }
+}
+
+function primeSavedRoomUi() {
+  const saved = loadSavedRoom();
+  if (!saved || !validateRoomCode(String(saved.room || ""))) return;
+  if (saved.role === "teacher" && !teacherToken()) return;
+  activeRoom = String(saved.room);
+  activeRoomName = String(saved.roomName || "").trim();
+  activeRole = saved.role === "teacher" ? "teacher" : "student";
+  activeCourseId = saved.courseId || "default";
+  roomCodeInput.value = activeRoom;
+  teacherRoomCodeInput.value = activeRoom;
+  if (teacherRoomNameInput) teacherRoomNameInput.value = activeRoomName;
 }
 
 function validateRoomCode(value) {
   return /^[0-9]{4,8}$/.test(value);
 }
 
+function validateCourseCode(value) {
+  return /^[0-9]{6}$/.test(value);
+}
+
 function setRoomUi() {
   const inRoom = Boolean(activeRoom);
+  const selectedRole = new FormData(roomForm).get("role");
+  const isTeacherSelected = selectedRole === "teacher";
+  const showTeacherDashboard = false;
   joinPanel.hidden = inRoom;
+  teacherDashboard.hidden = true;
   classroomLayout.hidden = !inRoom;
+  classroomLayout.classList.toggle("student-writing-only", inRoom && activeRole === "student");
+  boardPanel.hidden = !inRoom;
+  if (leaveRoomButton) leaveRoomButton.hidden = !inRoom;
+  document.querySelector(".board-actions").hidden = true;
+  coursePanel.hidden = activeRole !== "teacher";
+  courseControls.hidden = activeRole !== "teacher";
   courseForm.hidden = activeRole !== "teacher";
-  document.querySelector("#clearBoardButton").hidden = activeRole !== "teacher";
+  deleteCourseButton.disabled = activeRole !== "teacher" || !activeRoom || !activeCourseId || !courses.length;
+  renameRoomButton.hidden = activeRole !== "teacher";
   endCourseButton.hidden = activeRole !== "teacher";
-  teacherLoginCard.hidden = new FormData(roomForm).get("role") !== "teacher";
-  helperText.textContent = inRoom ? t("helperInRoom") : t("helperLocked");
+  deleteRoomButton.hidden = activeRole !== "teacher";
+  if (activeRole === "teacher" && inRoom && teacherHistory.nextElementSibling !== courseControls) {
+    coursePanel.insertBefore(teacherHistory, courseControls);
+  }
+  teacherHistory.hidden = !(activeRole === "teacher" && inRoom && teacherToken());
+  teacherLoginCard.hidden = !isTeacherSelected;
+  roomEntry.hidden = inRoom || isTeacherSelected;
+  helperText.textContent = inRoom ? t(activeRole === "student" ? "helperInRoomStudent" : "helperInRoom") : t("helperLocked");
   const course = activeCourse();
-  activeCourseName.textContent = course.name || t("defaultCourse");
-  boardCourseLabel.textContent = inRoom ? `${t("roomPrefix")} ${activeRoom} · ${course.name}` : t("sameRoomVisible");
+  if (activeCourseName) activeCourseName.textContent = course.name || t("defaultCourse");
+  updateBoardCourseLabel();
 }
 
 function updateEndCourseButton() {
@@ -936,65 +1612,130 @@ async function apiRequest(path, options = {}) {
   return response.json();
 }
 
-async function enterRoom(roomCode, role) {
-  if (!validateRoomCode(roomCode)) {
-    roomMessage.textContent = t("invalidRoom");
-    roomCodeInput.focus();
+async function enterRoom(roomCode, role, options = {}) {
+  const isTeacherRole = role === "teacher";
+  const codeInput = isTeacherRole ? teacherRoomCodeInput : roomCodeInput;
+  const messageTarget = isTeacherRole ? teacherDashboardMessage : roomMessage;
+  const isValidEntryCode = isTeacherRole ? validateRoomCode(roomCode) : validateCourseCode(roomCode);
+  if ((!isTeacherRole || options.existing) && !isValidEntryCode) {
+    messageTarget.textContent = t("invalidRoom");
+    codeInput.focus();
     return;
   }
 
-  const submitButton = roomForm.querySelector('button[type="submit"]');
+  const submitButton = isTeacherRole
+    ? teacherRoomForm.querySelector('button[type="submit"]')
+    : roomForm.querySelector('button[type="submit"]');
   submitButton.disabled = true;
-  roomMessage.textContent = role === "teacher" ? t("creatingRoom") : t("checkingRoom");
+  messageTarget.textContent = isTeacherRole ? t("creatingRoom") : t("checkingRoom");
 
   try {
     let roomInfo;
-    if (role === "teacher") {
+    if (isTeacherRole) {
       if (!teacherToken()) {
-        roomMessage.textContent = t("loginRequired");
+        messageTarget.textContent = t("loginRequired");
         teacherUsername.focus();
         return;
       }
-      roomInfo = await apiRequest(roomInfoPath(roomCode), {
-        method: "POST",
-        headers: authHeaders(),
-        body: JSON.stringify({ role: "teacher" }),
-      });
+      if (options.existing) {
+        roomInfo = await apiRequest(roomInfoPath(roomCode), { headers: authHeaders() });
+        if (!roomInfo.exists) {
+          localStorage.removeItem(STORAGE_KEY);
+          messageTarget.textContent = t("roomNotFound");
+          return;
+        }
+      } else {
+        const roomName = teacherRoomNameInput.value.trim() || t("defaultCourse");
+        roomInfo = await apiRequest(createRoomPath(), {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify({ role: "teacher", name: roomName, courseName: t("defaultCourse") }),
+        });
+      }
       await loadTeacherHistory();
     } else {
-      roomInfo = await apiRequest(roomInfoPath(roomCode));
+      roomInfo = await apiRequest(courseLookupPath(roomCode));
       if (!roomInfo.exists) {
-        roomMessage.textContent = t("roomNotFound");
-        roomCodeInput.focus();
+        messageTarget.textContent = t("roomNotFound");
+        codeInput.focus();
         return;
       }
     }
 
-    activeRoom = roomCode;
+    activeRoom = String(roomInfo.room || roomCode);
+    activeRoomName = String(roomInfo.name || "").trim();
+    if (isTeacherRole && teacherRoomNameInput) teacherRoomNameInput.value = activeRoomName;
     activeRole = role;
     courses = roomInfo.courses?.length ? roomInfo.courses : [{ id: "default", name: t("defaultCourse") }];
     activeCourseId = roomInfo.activeCourseId || courses[0].id;
     useServer = true;
     roomMessage.textContent = "";
+    teacherDashboardMessage.textContent = "";
     saveCurrentRoom();
     renderCourses();
+    syncCourseNameInput(true);
     setRoomUi();
-    window.requestAnimationFrame(resizeCanvas);
+    updateBrowserHistory();
+    window.requestAnimationFrame(() => {
+      resizeCanvas({ center: true, snapshot: null });
+      resetCanvasDraft();
+    });
     await refreshPosts();
     startTimers();
   } catch (error) {
-    if (role === "teacher" && error.status === 401) {
+    if (isTeacherRole && error.status === 401) {
       localStorage.removeItem(TEACHER_TOKEN_KEY);
       updateTeacherStatus();
-      roomMessage.textContent = t("teacherSessionExpired");
+      messageTarget.textContent = t("teacherSessionExpired");
     } else if (role !== "teacher" && error.status === 404) {
-      roomMessage.textContent = t("roomNotFound");
+      messageTarget.textContent = t("roomNotFound");
     } else {
-      roomMessage.textContent = t("roomCheckFailed");
+      messageTarget.textContent = t("roomCheckFailed");
     }
-    roomCodeInput.focus();
+    codeInput.focus();
   } finally {
     submitButton.disabled = false;
+  }
+}
+
+async function restoreSavedRoom() {
+  const saved = loadSavedRoom();
+  if (!saved || !validateRoomCode(String(saved.room || ""))) return;
+  if (saved.role === "teacher" && !teacherToken()) return;
+
+  try {
+    const roomInfo = await apiRequest(roomInfoPath(saved.room));
+    if (!roomInfo.exists) {
+      localStorage.removeItem(STORAGE_KEY);
+      return;
+    }
+
+    activeRoom = String(saved.room);
+    activeRoomName = String(roomInfo.name || saved.roomName || "").trim();
+    activeRole = saved.role === "teacher" ? "teacher" : "student";
+    courses = roomInfo.courses?.length ? roomInfo.courses : [{ id: "default", name: t("defaultCourse") }];
+    activeCourseId = courses.some((course) => course.id === saved.courseId)
+      ? saved.courseId
+      : roomInfo.activeCourseId || courses[0].id;
+    useServer = true;
+    roomCodeInput.value = activeRoom;
+    teacherRoomCodeInput.value = activeRoom;
+    if (teacherRoomNameInput) teacherRoomNameInput.value = activeRoomName;
+    roomMessage.textContent = "";
+    teacherDashboardMessage.textContent = "";
+    saveCurrentRoom();
+    renderCourses();
+    syncCourseNameInput(true);
+    setRoomUi();
+    window.requestAnimationFrame(() => {
+      resizeCanvas({ center: true, snapshot: null });
+      resetCanvasDraft();
+    });
+    await refreshPosts({ quiet: true });
+    startTimers();
+  } catch {
+    useServer = false;
+    setRoomUi();
   }
 }
 
@@ -1038,6 +1779,7 @@ async function createCourse(name) {
     activeCourseId = data.activeCourseId;
     posts = [];
     courseNameInput.value = "";
+    if (courseCodeInput) courseCodeInput.value = "";
     renderCourses();
     setRoomUi();
     renderBoard();
@@ -1045,6 +1787,98 @@ async function createCourse(name) {
     helperText.textContent = t("courseCreated", { name: activeCourse().name });
   } catch {
     helperText.textContent = t("courseCreateFailed");
+  }
+}
+
+async function renameCourse(name) {
+  if (!activeRoom || activeRole !== "teacher" || !activeCourseId) return;
+  const courseName = name.trim();
+  if (!courseName) {
+    courseNameInput.focus();
+    return;
+  }
+  try {
+    const data = await apiRequest(coursePath(activeCourseId), {
+      method: "PATCH",
+      headers: authHeaders(),
+      body: JSON.stringify({ name: courseName }),
+    });
+    courses = data.courses;
+    activeCourseId = data.activeCourseId || activeCourseId;
+    renderCourses();
+    syncCourseNameInput(true);
+    setRoomUi();
+    renderBoard();
+    await loadTeacherHistory();
+    helperText.textContent = t("courseRenamed", { name: activeCourse().name });
+  } catch {
+    helperText.textContent = t("courseRenameFailed");
+  }
+}
+
+async function deleteCourse() {
+  if (!activeRoom || activeRole !== "teacher" || !activeCourseId) return;
+  const course = activeCourse();
+  const courseName = course.name || t("defaultCourse");
+  if (!window.confirm(t("confirmDeleteCourse", { name: courseName }))) return;
+  deleteCourseButton.disabled = true;
+  try {
+    const data = await apiRequest(coursePath(course.id), {
+      method: "DELETE",
+      headers: authHeaders(),
+    });
+    courses = data.courses?.length ? data.courses : [{ id: "default", name: t("defaultCourse") }];
+    activeCourseId = data.activeCourseId || courses[0]?.id || "default";
+    posts = data.posts || [];
+    renderCourses();
+    syncCourseNameInput(true);
+    setRoomUi();
+    renderBoard();
+    await loadTeacherHistory();
+    helperText.textContent = t("courseDeleted", { name: courseName });
+  } catch {
+    helperText.textContent = t("courseDeleteFailed");
+  } finally {
+    deleteCourseButton.disabled = false;
+  }
+}
+
+async function renameRoom() {
+  if (!activeRoom || activeRole !== "teacher") return;
+  openRoomNameModal();
+}
+
+function openRoomNameModal() {
+  roomNameModalInput.value = activeRoomName || "";
+  roomNameModal.hidden = false;
+  window.setTimeout(() => {
+    roomNameModalInput.focus();
+    roomNameModalInput.select();
+  }, 0);
+}
+
+function closeRoomNameModal() {
+  roomNameModal.hidden = true;
+}
+
+async function saveRoomName(nextName) {
+  if (!activeRoom || activeRole !== "teacher") return;
+  try {
+    const roomInfo = await apiRequest(roomPath(activeRoom), {
+      method: "PATCH",
+      headers: authHeaders(),
+      body: JSON.stringify({ name: nextName.trim() }),
+    });
+    activeRoomName = String(roomInfo.name || "").trim();
+    if (teacherRoomNameInput) teacherRoomNameInput.value = activeRoomName;
+    saveCurrentRoom();
+    setRoomUi();
+    renderBoard();
+    await loadTeacherHistory();
+    helperText.textContent = t("roomRenamed");
+    closeRoomNameModal();
+  } catch {
+    helperText.textContent = t("roomRenameFailed");
   }
 }
 
@@ -1056,14 +1890,16 @@ async function endCourseAndRotatePassword() {
   try {
     const roomInfo = await apiRequest(rotateRoomPath(), { method: "POST", headers: authHeaders() });
     activeRoom = roomInfo.room;
+    activeRoomName = String(roomInfo.name || activeRoomName || "").trim();
     courses = roomInfo.courses?.length ? roomInfo.courses : courses;
     activeCourseId = roomInfo.activeCourseId || activeCourseId;
     roomCodeInput.value = activeRoom;
+    if (teacherRoomNameInput) teacherRoomNameInput.value = activeRoomName;
     saveCurrentRoom();
     renderCourses();
     setRoomUi();
     await refreshPosts();
-    const message = passwordRotatedMessage(activeRoom);
+    const message = passwordRotatedMessage(activeCourse().code || "");
     await loadTeacherHistory();
     helperText.textContent = message;
     window.alert(message);
@@ -1071,6 +1907,35 @@ async function endCourseAndRotatePassword() {
     helperText.textContent = passwordRotateFailedMessage();
   } finally {
     endCourseButton.disabled = false;
+  }
+}
+
+async function deleteRoom(roomCode = activeRoom, options = {}) {
+  if (!roomCode || activeRole !== "teacher") return;
+  if (!window.confirm(confirmDeleteRoomMessage(roomCode))) return;
+  deleteRoomButton.disabled = true;
+  try {
+    await apiRequest(roomPath(roomCode), { method: "DELETE", headers: authHeaders() });
+    if (roomCode === activeRoom) {
+      activeRoom = "";
+      activeRoomName = "";
+      posts = [];
+      courses = [];
+      activeCourseId = "default";
+      if (refreshTimer) window.clearInterval(refreshTimer);
+      if (courseRefreshTimer) window.clearInterval(courseRefreshTimer);
+      localStorage.removeItem(STORAGE_KEY);
+      setRoomUi();
+      renderCourses();
+      renderBoard();
+      updateBrowserHistory();
+    }
+    await loadTeacherHistory();
+    helperText.textContent = roomDeletedMessage(roomCode);
+  } catch {
+    helperText.textContent = deleteRoomFailedMessage();
+  } finally {
+    deleteRoomButton.disabled = false;
   }
 }
 
@@ -1086,13 +1951,21 @@ function renderCourses() {
   if (courses.some((course) => course.id === previous)) activeCourseId = previous;
   if (!courses.some((course) => course.id === activeCourseId)) activeCourseId = courses[0]?.id || "default";
   courseSelect.value = activeCourseId;
+  syncCourseNameInput(false);
   setRoomUi();
 }
 
 async function refreshPosts({ quiet = false } = {}) {
   if (!activeRoom || !useServer || !activeCourseId) return;
+  if (activeRole === "student" && !studentName.value.trim()) {
+    posts = [];
+    renderBoard();
+    return;
+  }
   try {
-    posts = await apiRequest(coursePostsPath());
+    posts = await apiRequest(coursePostsPath(), {
+      headers: activeRole === "teacher" ? authHeaders() : {},
+    });
     renderBoard();
   } catch {
     useServer = false;
@@ -1101,41 +1974,228 @@ async function refreshPosts({ quiet = false } = {}) {
   }
 }
 
-function resizeCanvas() {
-  const snapshot = canvas.width ? canvas.toDataURL("image/png") : null;
+function resizeCanvas(options = {}) {
+  const snapshot = options.snapshot ?? (masterCanvas.width ? masterCanvas.toDataURL("image/png") : (canvas.width ? canvas.toDataURL("image/png") : null));
+  const oldContentWidth = canvasContentWidth || canvasBaseWidth || canvasWrap.clientWidth || 1;
+  const oldContentHeight = canvasContentHeight || canvasBaseHeight || canvasWrap.clientHeight || 1;
   const rect = canvasWrap.getBoundingClientRect();
+  const width = Math.max(1, Math.floor(canvasWrap.clientWidth || rect.width));
+  const height = Math.max(1, Math.floor(canvasWrap.clientHeight || rect.height));
   const scale = window.devicePixelRatio || 1;
-  canvas.width = Math.max(1, Math.floor(rect.width * scale));
-  canvas.height = Math.max(1, Math.floor(rect.height * scale));
+  canvasBaseWidth = width;
+  canvasBaseHeight = height;
+  canvasContentWidth = Math.max(canvasContentWidth, Math.floor(width * CANVAS_WORLD_FACTOR));
+  canvasContentHeight = Math.max(canvasContentHeight, Math.floor(height * CANVAS_WORLD_FACTOR));
+  masterCanvas.width = Math.max(1, Math.floor(canvasContentWidth * scale * MASTER_CANVAS_SCALE));
+  masterCanvas.height = Math.max(1, Math.floor(canvasContentHeight * scale * MASTER_CANVAS_SCALE));
+  masterCtx.setTransform(scale * MASTER_CANVAS_SCALE, 0, 0, scale * MASTER_CANVAS_SCALE, 0, 0);
+  masterCtx.lineCap = "round";
+  masterCtx.lineJoin = "round";
+  updateCanvasScaleUi(currentCanvasScale(), { center: Boolean(options.center) });
+  if (snapshot) {
+    const image = new Image();
+    image.onload = () => {
+      masterCtx.drawImage(image, 0, 0, oldContentWidth, oldContentHeight);
+      renderCanvasFromMaster();
+      if (options.center) centerCanvasViewport();
+    };
+    image.src = snapshot;
+  } else {
+    renderCanvasFromMaster();
+    if (options.center) centerCanvasViewport();
+  }
+  syncBoardHeight();
+}
+
+function renderCanvasFromMaster() {
+  const scale = window.devicePixelRatio || 1;
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(masterCanvas, 0, 0, canvas.width, canvas.height);
+  ctx.restore();
   ctx.setTransform(scale, 0, 0, scale, 0, 0);
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  if (snapshot) {
-    const image = new Image();
-    image.onload = () => ctx.drawImage(image, 0, 0, rect.width, rect.height);
-    image.src = snapshot;
+}
+
+function currentCanvasScale() {
+  return canvasScalePercent;
+}
+
+function updateCanvasScaleUi(scale = currentCanvasScale(), options = {}) {
+  const scaleValue = Math.min(150, Math.max(50, Math.round(Number(scale) || 100)));
+  canvasScalePercent = scaleValue;
+  canvasScaleInput.value = String(scaleValue);
+  canvasScaleValue.textContent = `${scaleValue}%`;
+  applyCanvasZoom(scaleValue, options);
+}
+
+function applyCanvasZoom(scale = currentCanvasScale(), options = {}) {
+  const scaleValue = Math.min(150, Math.max(50, Math.round(Number(scale) || 100)));
+  const zoom = scaleValue / 100;
+  if (!canvasBaseWidth || !canvasBaseHeight) {
+    const rect = canvasWrap.getBoundingClientRect();
+    canvasBaseWidth = Math.max(1, Math.floor(canvasWrap.clientWidth || rect.width));
+    canvasBaseHeight = Math.max(1, Math.floor(canvasWrap.clientHeight || rect.height));
   }
+  canvasContentWidth = Math.max(canvasContentWidth, Math.floor(canvasBaseWidth * CANVAS_WORLD_FACTOR));
+  canvasContentHeight = Math.max(canvasContentHeight, Math.floor(canvasBaseHeight * CANVAS_WORLD_FACTOR));
+  const displayWidth = Math.max(canvasBaseWidth * 1.35, canvasContentWidth * zoom);
+  const displayHeight = Math.max(canvasBaseHeight * 1.35, canvasContentHeight * zoom);
+  const pixelScale = window.devicePixelRatio || 1;
+  canvas.width = Math.max(1, Math.floor(displayWidth * pixelScale));
+  canvas.height = Math.max(1, Math.floor(displayHeight * pixelScale));
+  canvasStage.style.setProperty("--canvas-stage-width", `${displayWidth}px`);
+  canvasStage.style.setProperty("--canvas-stage-height", `${displayHeight}px`);
+  canvasWrap.style.setProperty("--canvas-scroll-width", `${displayWidth}px`);
+  canvasWrap.style.setProperty("--canvas-scroll-height", `${displayHeight}px`);
+  canvasWrap.style.setProperty("--grid-large", `${80 * scaleValue / 100}px`);
+  canvasWrap.style.setProperty("--grid-small", `${40 * scaleValue / 100}px`);
+  renderCanvasFromMaster();
+  if (options.center) centerCanvasViewport();
+}
+
+function centerCanvasViewport() {
+  const center = () => {
+    canvasWrap.scrollLeft = Math.max(0, (canvasWrap.scrollWidth - canvasWrap.clientWidth) / 2);
+    canvasWrap.scrollTop = Math.max(0, (canvasWrap.scrollHeight - canvasWrap.clientHeight) / 2);
+  };
+  center();
+  requestAnimationFrame(center);
+}
+
+function rescaleCanvasDrawing(previousScale, nextScale) {
+  if (!hasInk || !masterCanvas.width || !masterCanvas.height) return;
+  const previousContentScale = Math.min(100, Math.max(50, previousScale)) / 100;
+  const nextContentScale = Math.min(100, Math.max(50, nextScale)) / 100;
+  if (previousContentScale === nextContentScale) return;
+
+  const factor = nextContentScale / previousContentScale;
+  const snapshot = document.createElement("canvas");
+  snapshot.width = masterCanvas.width;
+  snapshot.height = masterCanvas.height;
+  const snapshotCtx = snapshot.getContext("2d");
+  snapshotCtx.drawImage(masterCanvas, 0, 0);
+
+  const deviceScale = window.devicePixelRatio || 1;
+  masterCtx.save();
+  masterCtx.setTransform(1, 0, 0, 1, 0, 0);
+  masterCtx.clearRect(0, 0, masterCanvas.width, masterCanvas.height);
+  masterCtx.imageSmoothingEnabled = true;
+  masterCtx.imageSmoothingQuality = "high";
+  masterCtx.drawImage(snapshot, 0, 0, masterCanvas.width * factor, masterCanvas.height * factor);
+  masterCtx.restore();
+  masterCtx.setTransform(deviceScale * MASTER_CANVAS_SCALE, 0, 0, deviceScale * MASTER_CANVAS_SCALE, 0, 0);
+  masterCtx.lineCap = "round";
+  masterCtx.lineJoin = "round";
+  renderCanvasFromMaster();
+}
+
+function adjustCanvasScale(delta) {
+  setCanvasScale(currentCanvasScale() + delta);
+}
+
+function setCanvasScale(percent) {
+  const previousScale = currentCanvasScale();
+  const nextScale = Math.min(150, Math.max(50, Math.round(Number(percent) || 100)));
+  if (nextScale === previousScale) return;
+  updateCanvasScaleUi(nextScale);
+}
+
+function restoreCanvasScale() {
+  canvasWrap.style.removeProperty("--canvas-height");
+  localStorage.removeItem(CANVAS_HEIGHT_KEY);
+  updateCanvasScaleUi(100, { center: true });
 }
 
 function pushUndoState() {
-  undoStack.push(canvas.toDataURL("image/png"));
+  undoStack.push(masterCanvas.toDataURL("image/png"));
   if (undoStack.length > 20) undoStack.shift();
 }
 
 function restoreImage(dataUrl) {
-  const rect = canvasWrap.getBoundingClientRect();
-  ctx.clearRect(0, 0, rect.width, rect.height);
+  const width = canvasContentWidth || canvasBaseWidth || canvasWrap.clientWidth || canvasWrap.getBoundingClientRect().width;
+  const height = canvasContentHeight || canvasBaseHeight || canvasWrap.clientHeight || canvasWrap.getBoundingClientRect().height;
+  masterCtx.clearRect(0, 0, width, height);
   const image = new Image();
-  image.onload = () => ctx.drawImage(image, 0, 0, rect.width, rect.height);
+  image.onload = () => {
+    masterCtx.drawImage(image, 0, 0, width, height);
+    renderCanvasFromMaster();
+  };
   image.src = dataUrl;
 }
 
+function resetCanvasDraft() {
+  const width = canvasContentWidth || canvasBaseWidth || canvasWrap.clientWidth || canvasWrap.getBoundingClientRect().width;
+  const height = canvasContentHeight || canvasBaseHeight || canvasWrap.clientHeight || canvasWrap.getBoundingClientRect().height;
+  masterCtx.clearRect(0, 0, width, height);
+  undoStack = [];
+  drawing = false;
+  lastPoint = null;
+  lastMidPoint = null;
+  smoothPoint = null;
+  hasInk = false;
+  renderCanvasFromMaster();
+}
+
 function pointerPoint(event) {
-  const rect = canvas.getBoundingClientRect();
+  const rect = canvasStage.getBoundingClientRect();
+  const zoom = currentCanvasScale() / 100;
   return {
-    x: event.clientX - rect.left,
-    y: event.clientY - rect.top,
+    x: (event.clientX - rect.left) / zoom,
+    y: (event.clientY - rect.top) / zoom,
   };
+}
+
+function applyBrushStyle() {
+  masterCtx.globalCompositeOperation = mode === "erase" ? "destination-out" : "source-over";
+  masterCtx.strokeStyle = mode === "erase" ? "rgba(0,0,0,1)" : inkColor.value;
+  masterCtx.fillStyle = mode === "erase" ? "rgba(0,0,0,1)" : inkColor.value;
+  masterCtx.lineWidth = Number(brushSize.value);
+  masterCtx.lineCap = "round";
+  masterCtx.lineJoin = "round";
+  masterCtx.miterLimit = 1;
+}
+
+function drawBrushCircle(point, size = Number(brushSize.value)) {
+  masterCtx.beginPath();
+  masterCtx.arc(point.x, point.y, size / 2, 0, Math.PI * 2);
+  masterCtx.fill();
+}
+
+function strokeToPoint(point, options = {}) {
+  if (!lastPoint) return;
+  const size = Number(brushSize.value);
+  const origin = smoothPoint || lastPoint;
+  const smoothing = options.finish ? 1 : 0.42;
+  const nextPoint = {
+    x: origin.x + (point.x - origin.x) * smoothing,
+    y: origin.y + (point.y - origin.y) * smoothing,
+  };
+  const distance = Math.hypot(nextPoint.x - lastPoint.x, nextPoint.y - lastPoint.y);
+  const steps = Math.max(1, Math.ceil(distance / Math.max(1.5, size * 0.22)));
+  const midpoint = {
+    x: (lastPoint.x + nextPoint.x) / 2,
+    y: (lastPoint.y + nextPoint.y) / 2,
+  };
+  const startPoint = lastMidPoint || lastPoint;
+  masterCtx.beginPath();
+  masterCtx.moveTo(startPoint.x, startPoint.y);
+  masterCtx.quadraticCurveTo(lastPoint.x, lastPoint.y, midpoint.x, midpoint.y);
+  masterCtx.stroke();
+  for (let index = 1; index <= steps; index += 1) {
+    const ratio = index / steps;
+    drawBrushCircle({
+      x: lastPoint.x + (nextPoint.x - lastPoint.x) * ratio,
+      y: lastPoint.y + (nextPoint.y - lastPoint.y) * ratio,
+    }, size);
+  }
+  lastPoint = nextPoint;
+  smoothPoint = nextPoint;
+  lastMidPoint = midpoint;
 }
 
 function beginStroke(event) {
@@ -1145,42 +2205,55 @@ function beginStroke(event) {
   pushUndoState();
   drawing = true;
   lastPoint = pointerPoint(event);
+  lastMidPoint = lastPoint;
+  smoothPoint = lastPoint;
   drawDot(lastPoint);
 }
 
 function drawDot(point) {
   const size = Number(brushSize.value);
-  ctx.save();
-  ctx.globalCompositeOperation = mode === "erase" ? "destination-out" : "source-over";
-  ctx.fillStyle = mode === "erase" ? "rgba(0,0,0,1)" : inkColor.value;
-  ctx.beginPath();
-  ctx.arc(point.x, point.y, size / 2, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
+  masterCtx.save();
+  applyBrushStyle();
+  drawBrushCircle(point, size);
+  masterCtx.restore();
+  renderCanvasFromMaster();
   if (mode === "draw") hasInk = true;
 }
 
 function continueStroke(event) {
   if (!drawing || !lastPoint) return;
   event.preventDefault();
-  const point = pointerPoint(event);
-  ctx.save();
-  ctx.globalCompositeOperation = mode === "erase" ? "destination-out" : "source-over";
-  ctx.strokeStyle = mode === "erase" ? "rgba(0,0,0,1)" : inkColor.value;
-  ctx.lineWidth = Number(brushSize.value);
-  ctx.beginPath();
-  ctx.moveTo(lastPoint.x, lastPoint.y);
-  ctx.lineTo(point.x, point.y);
-  ctx.stroke();
-  ctx.restore();
-  lastPoint = point;
+  const events = typeof event.getCoalescedEvents === "function" ? event.getCoalescedEvents() : [event];
+  masterCtx.save();
+  applyBrushStyle();
+  events.forEach((pointerEvent) => strokeToPoint(pointerPoint(pointerEvent)));
+  masterCtx.restore();
+  renderCanvasFromMaster();
   if (mode === "draw") hasInk = true;
 }
 
 function endStroke(event) {
   if (!drawing) return;
+  if (event?.clientX !== undefined && event?.clientY !== undefined && lastPoint) {
+    masterCtx.save();
+    applyBrushStyle();
+    strokeToPoint(pointerPoint(event), { finish: true });
+    masterCtx.restore();
+  }
+  if (lastPoint && lastMidPoint) {
+    masterCtx.save();
+    applyBrushStyle();
+    masterCtx.beginPath();
+    masterCtx.moveTo(lastMidPoint.x, lastMidPoint.y);
+    masterCtx.lineTo(lastPoint.x, lastPoint.y);
+    masterCtx.stroke();
+    masterCtx.restore();
+    renderCanvasFromMaster();
+  }
   drawing = false;
   lastPoint = null;
+  lastMidPoint = null;
+  smoothPoint = null;
   if (event.pointerId !== undefined) {
     try {
       canvas.releasePointerCapture(event.pointerId);
@@ -1192,8 +2265,10 @@ function endStroke(event) {
 
 function clearCanvas() {
   pushUndoState();
-  const rect = canvasWrap.getBoundingClientRect();
-  ctx.clearRect(0, 0, rect.width, rect.height);
+  const width = canvasContentWidth || canvasBaseWidth || canvasWrap.clientWidth || canvasWrap.getBoundingClientRect().width;
+  const height = canvasContentHeight || canvasBaseHeight || canvasWrap.clientHeight || canvasWrap.getBoundingClientRect().height;
+  masterCtx.clearRect(0, 0, width, height);
+  renderCanvasFromMaster();
   hasInk = false;
 }
 
@@ -1225,7 +2300,7 @@ async function submitPost() {
   const post = {
     name: studentName.value.trim(),
     prompt: promptText.value.trim() || t("defaultPrompt"),
-    image: canvas.toDataURL("image/png"),
+    image: masterCanvas.toDataURL("image/png"),
   };
 
   document.querySelector("#submitButton").disabled = true;
@@ -1237,7 +2312,7 @@ async function submitPost() {
       body: JSON.stringify(post),
     });
     renderBoard();
-    clearCanvas();
+    resetCanvasDraft();
     helperText.textContent = t("sentToRoom", { course: activeCourse().name });
   } catch {
     helperText.textContent = t("sendFailed");
@@ -1328,15 +2403,17 @@ async function deleteSinglePost(post) {
 function renderBoard() {
   boardList.replaceChildren();
   const course = activeCourse();
-  activeCourseName.textContent = course.name || t("defaultCourse");
-  boardCourseLabel.textContent = activeRoom ? `${t("roomPrefix")} ${activeRoom} · ${course.name}` : t("sameRoomVisible");
+  if (activeCourseName) activeCourseName.textContent = course.name || t("defaultCourse");
+  if (boardTitle) boardTitle.textContent = activeRole === "student" ? t("myWorksTitle") : t("boardTitle");
+  updateBoardCourseLabel();
 
   const visiblePosts = filteredPosts();
   if (!visiblePosts.length) {
     const emptyState = emptyTemplate.content.cloneNode(true);
-    emptyState.querySelector("strong").textContent = t("emptyTitle");
-    emptyState.querySelector("span").textContent = t("emptyText");
+    emptyState.querySelector("strong").textContent = t(activeRole === "student" ? "myWorksEmptyTitle" : "emptyTitle");
+    emptyState.querySelector("span").textContent = t(activeRole === "student" ? "myWorksEmptyText" : "emptyText");
     boardList.append(emptyState);
+    syncBoardHeight();
     return;
   }
 
@@ -1395,18 +2472,30 @@ function renderBoard() {
     fragment.append(card);
   });
   boardList.append(fragment);
+  syncBoardHeight();
 }
 
 roomForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const role = new FormData(roomForm).get("role");
+  if (role === "teacher" && !teacherToken()) {
+    roomMessage.textContent = t("loginRequired");
+    teacherUsername.focus();
+    return;
+  }
   enterRoom(roomCodeInput.value.trim(), role);
 });
 
 roomForm.addEventListener("change", () => setRoomUi());
+teacherRoomForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  enterRoom("", "teacher");
+});
 teacherLoginButton.addEventListener("click", () => teacherAuth("login"));
 teacherRegisterButton.addEventListener("click", () => teacherAuth("register"));
+teacherResetButton.addEventListener("click", resetTeacherPassword);
 teacherLogoutButton.addEventListener("click", logoutTeacher);
+teacherDashboardLogoutButton.addEventListener("click", logoutTeacher);
 teacherPassword.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
     event.preventDefault();
@@ -1419,25 +2508,32 @@ courseForm.addEventListener("submit", (event) => {
   createCourse(courseNameInput.value);
 });
 
+renameCourseButton.addEventListener("click", () => renameCourse(courseNameInput.value));
+
+deleteCourseButton.addEventListener("click", deleteCourse);
+
 courseSelect.addEventListener("change", async () => {
   activeCourseId = courseSelect.value;
+  syncCourseNameInput(true);
   saveCurrentRoom();
   setRoomUi();
   await refreshPosts();
 });
 
 document.querySelector("#switchRoomButton").addEventListener("click", () => {
-  setBoardFullscreen(false);
-  activeRoom = "";
-  posts = [];
-  courses = [];
-  activeCourseId = "default";
-  if (refreshTimer) window.clearInterval(refreshTimer);
-  if (courseRefreshTimer) window.clearInterval(courseRefreshTimer);
-  localStorage.removeItem(STORAGE_KEY);
+  leaveCurrentRoomForHistory();
+  if (activeRole === "teacher" && teacherToken()) {
+    openTeacherDefaultClassroom();
+    return;
+  }
   setRoomUi();
-  renderCourses();
-  renderBoard();
+  updateBrowserHistory();
+});
+
+leaveRoomButton?.addEventListener("click", () => {
+  leaveCurrentRoomForHistory();
+  setRoomUi();
+  updateBrowserHistory({ replace: true });
 });
 
 fullscreenBoardButton.addEventListener("click", () => {
@@ -1456,28 +2552,61 @@ document.querySelectorAll("[data-mode]").forEach((button) => {
 
 document.querySelector("#clearButton").addEventListener("click", clearCanvas);
 document.querySelector("#undoButton").addEventListener("click", undo);
+canvasShrinkButton.addEventListener("click", () => adjustCanvasScale(-1));
+canvasGrowButton.addEventListener("click", () => adjustCanvasScale(1));
+canvasScaleInput.addEventListener("input", () => setCanvasScale(Number(canvasScaleInput.value)));
 document.querySelector("#submitButton").addEventListener("click", submitPost);
-endCourseButton.addEventListener("click", endCourseAndRotatePassword);
-document.querySelector("#clearBoardButton").addEventListener("click", async () => {
-  if (activeRole !== "teacher" || !posts.length) return;
-  const confirmed = window.confirm(t("confirmClear", { course: activeCourse().name }));
-  if (!confirmed) return;
-  try {
-    posts = await apiRequest(coursePostsPath(), { method: "DELETE", headers: authHeaders() });
-    renderBoard();
-  } catch {
-    helperText.textContent = t("clearFailed");
-  }
+studentName.addEventListener("input", () => {
+  if (studentNameRefreshTimer) window.clearTimeout(studentNameRefreshTimer);
+  studentNameRefreshTimer = window.setTimeout(() => {
+    if (activeRole === "student" && activeRoom) refreshPosts({ quiet: true });
+  }, 350);
 });
+renameRoomButton.addEventListener("click", renameRoom);
+roomNameForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  saveRoomName(roomNameModalInput.value);
+});
+roomNameCancelButton.addEventListener("click", closeRoomNameModal);
+roomNameModal.addEventListener("click", (event) => {
+  if (event.target === roomNameModal) closeRoomNameModal();
+});
+endCourseButton.addEventListener("click", endCourseAndRotatePassword);
+deleteRoomButton.addEventListener("click", () => deleteRoom(activeRoom));
 searchInput.addEventListener("input", renderBoard);
 sortSelect.addEventListener("change", renderBoard);
 
 window.addEventListener("resize", () => {
   clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(resizeCanvas, 150);
+  resizeTimer = setTimeout(() => {
+    resizeCanvas();
+    syncBoardHeight();
+  }, 150);
+});
+
+window.addEventListener("popstate", (event) => {
+  handlingBrowserBack = true;
+  const view = event.state?.view || "join";
+  if (view === "classroom" && event.state?.room) {
+    const saved = loadSavedRoom();
+    if (saved && String(saved.room) === String(event.state.room)) {
+      restoreSavedRoom();
+    } else if (teacherToken() && event.state.role === "teacher") {
+      showTeacherDashboardFromHistory();
+    } else {
+      showJoinFromHistory();
+    }
+  } else {
+    showJoinFromHistory();
+  }
+  handlingBrowserBack = false;
 });
 
 window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !roomNameModal.hidden) {
+    closeRoomNameModal();
+    return;
+  }
   if (event.key === "Escape" && isBoardFullscreen) {
     setBoardFullscreen(false);
   }
@@ -1490,8 +2619,17 @@ teacherSession = savedTeacher;
 window.addEventListener("load", loadTeacherHistory);
 
 courses = [{ id: "default", name: t("defaultCourse") }];
-resizeCanvas();
+primeSavedRoomUi();
+restoreCanvasScale();
+resizeCanvas({ center: true });
 languageSelect.addEventListener("change", () => applyLanguage(languageSelect.value));
 applyLanguage(currentLanguage);
 setRoomUi();
 renderBoard();
+restoreSavedRoom().finally(async () => {
+  if (!activeRoom && teacherToken()) {
+    await openTeacherDefaultClassroom();
+  }
+  initializeBrowserHistory();
+});
+
