@@ -971,6 +971,7 @@ let lastMidPoint = null;
 let smoothPoint = null;
 let hasInk = false;
 let undoStack = [];
+let undoInkStack = [];
 let resizeTimer = null;
 let studentNameRefreshTimer = null;
 let canvasBaseWidth = 0;
@@ -986,6 +987,9 @@ let refreshTimer = null;
 let courseRefreshTimer = null;
 let isBoardFullscreen = false;
 let handlingBrowserBack = false;
+let activeStrokePointerId = null;
+let touchPanState = null;
+const activeTouchPointers = new Map();
 
 function t(key, values = {}) {
   const dictionary = TRANSLATIONS[currentLanguage] || TRANSLATIONS["zh-Hant"];
@@ -2113,7 +2117,26 @@ function restoreCanvasScale() {
 
 function pushUndoState() {
   undoStack.push(masterCanvas.toDataURL("image/png"));
+  undoInkStack.push(hasInk);
   if (undoStack.length > 20) undoStack.shift();
+  if (undoInkStack.length > 20) undoInkStack.shift();
+}
+
+function cancelActiveStroke() {
+  if (!drawing) return;
+  const previous = undoStack.pop();
+  const previousHasInk = undoInkStack.pop();
+  drawing = false;
+  lastPoint = null;
+  lastMidPoint = null;
+  smoothPoint = null;
+  activeStrokePointerId = null;
+  if (previous) {
+    hasInk = Boolean(previousHasInk);
+    restoreImage(previous);
+  } else {
+    renderCanvasFromMaster();
+  }
 }
 
 function restoreImage(dataUrl) {
@@ -2139,6 +2162,51 @@ function resetCanvasDraft() {
   smoothPoint = null;
   hasInk = false;
   renderCanvasFromMaster();
+}
+
+function isTouchPointer(event) {
+  return event.pointerType === "touch";
+}
+
+function rememberTouchPointer(event) {
+  if (!isTouchPointer(event)) return;
+  activeTouchPointers.set(event.pointerId, {
+    x: event.clientX,
+    y: event.clientY,
+  });
+}
+
+function forgetTouchPointer(event) {
+  if (!isTouchPointer(event)) return;
+  activeTouchPointers.delete(event.pointerId);
+  if (activeTouchPointers.size < 2) touchPanState = null;
+}
+
+function startTouchCanvasPan(event) {
+  if (!isTouchPointer(event) || activeTouchPointers.size < 2) return false;
+  cancelActiveStroke();
+  event.preventDefault();
+  const firstTwoTouches = Array.from(activeTouchPointers.values()).slice(0, 2);
+  const centerX = (firstTwoTouches[0].x + firstTwoTouches[1].x) / 2;
+  const centerY = (firstTwoTouches[0].y + firstTwoTouches[1].y) / 2;
+  touchPanState = {
+    centerX,
+    centerY,
+    scrollLeft: canvasWrap.scrollLeft,
+    scrollTop: canvasWrap.scrollTop,
+  };
+  return true;
+}
+
+function updateTouchCanvasPan(event) {
+  if (!isTouchPointer(event) || activeTouchPointers.size < 2 || !touchPanState) return false;
+  event.preventDefault();
+  const firstTwoTouches = Array.from(activeTouchPointers.values()).slice(0, 2);
+  const centerX = (firstTwoTouches[0].x + firstTwoTouches[1].x) / 2;
+  const centerY = (firstTwoTouches[0].y + firstTwoTouches[1].y) / 2;
+  canvasWrap.scrollLeft = touchPanState.scrollLeft - (centerX - touchPanState.centerX);
+  canvasWrap.scrollTop = touchPanState.scrollTop - (centerY - touchPanState.centerY);
+  return true;
 }
 
 function pointerPoint(event) {
@@ -2200,10 +2268,13 @@ function strokeToPoint(point, options = {}) {
 
 function beginStroke(event) {
   if (!activeRoom) return;
+  rememberTouchPointer(event);
+  if (startTouchCanvasPan(event)) return;
   event.preventDefault();
   canvas.setPointerCapture(event.pointerId);
   pushUndoState();
   drawing = true;
+  activeStrokePointerId = event.pointerId;
   lastPoint = pointerPoint(event);
   lastMidPoint = lastPoint;
   smoothPoint = lastPoint;
@@ -2221,7 +2292,15 @@ function drawDot(point) {
 }
 
 function continueStroke(event) {
+  if (isTouchPointer(event) && activeTouchPointers.has(event.pointerId)) {
+    activeTouchPointers.set(event.pointerId, {
+      x: event.clientX,
+      y: event.clientY,
+    });
+    if (updateTouchCanvasPan(event)) return;
+  }
   if (!drawing || !lastPoint) return;
+  if (activeStrokePointerId !== null && event.pointerId !== activeStrokePointerId) return;
   event.preventDefault();
   const events = typeof event.getCoalescedEvents === "function" ? event.getCoalescedEvents() : [event];
   masterCtx.save();
@@ -2233,6 +2312,10 @@ function continueStroke(event) {
 }
 
 function endStroke(event) {
+  if (isTouchPointer(event)) {
+    forgetTouchPointer(event);
+  }
+  if (activeStrokePointerId !== null && event?.pointerId !== undefined && event.pointerId !== activeStrokePointerId) return;
   if (!drawing) return;
   if (event?.clientX !== undefined && event?.clientY !== undefined && lastPoint) {
     masterCtx.save();
@@ -2251,6 +2334,7 @@ function endStroke(event) {
     renderCanvasFromMaster();
   }
   drawing = false;
+  activeStrokePointerId = null;
   lastPoint = null;
   lastMidPoint = null;
   smoothPoint = null;
@@ -2274,9 +2358,10 @@ function clearCanvas() {
 
 function undo() {
   const previous = undoStack.pop();
+  const previousHasInk = undoInkStack.pop();
   if (!previous) return;
+  hasInk = Boolean(previousHasInk);
   restoreImage(previous);
-  hasInk = true;
 }
 
 function setMode(nextMode) {
