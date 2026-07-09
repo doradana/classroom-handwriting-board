@@ -1,8 +1,14 @@
 services:
   - type: web
-    name: pinyin-kitchen
+    name: classroom-handwriting-board
     env: python
     plan: free
-    buildCommand: ""
-    startCommand: python server.py $PORT 0.0.0.0
-    autoDeploy: false
+    buildCommand: python --version
+    startCommand: python server.py
+    envVars:
+      - key: CLASSROOM_DATA_DIR
+        value: /var/data
+    disk:
+      name: classroom-handwriting-data
+      mountPath: /var/data
+      sizeGB: 1
