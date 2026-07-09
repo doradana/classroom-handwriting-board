@@ -1,0 +1,22 @@
+{
+  "room": "8544",
+  "name": "",
+  "teacher": {
+    "name": "????",
+    "email": "",
+    "picture": ""
+  },
+  "teacherId": "0c762646f48647fb99c18e77538ca723",
+  "courses": [
+    {
+      "id": "default",
+      "name": "預設課程",
+      "code": "562865",
+      "createdAt": "2026-06-29T23:19:24.412682+00:00"
+    }
+  ],
+  "activeCourseId": "default",
+  "postsByCourse": {
+    "default": []
+  }
+}
