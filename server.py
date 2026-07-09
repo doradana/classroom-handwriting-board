@@ -30,12 +30,47 @@ DATA_ROOT = default_data_root()
 DATA_DIR = DATA_ROOT / "rooms"
 TEACHERS_FILE = DATA_ROOT / "teachers.json"
 SESSION_SECRET_FILE = DATA_ROOT / "session-secret.txt"
+LEGACY_DATA_ROOT = ROOT / "data"
 MAX_BODY_BYTES = 4 * 1024 * 1024
 ROOM_RE = re.compile(r"^[0-9]{4,8}$")
 COURSE_CODE_RE = re.compile(r"^[0-9]{6}$")
 COURSE_RE = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
 USERNAME_RE = re.compile(r"^[A-Za-z0-9_.@-]{3,60}$")
 DEFAULT_COURSE_ID = "default"
+
+
+def ensure_data_root():
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    DATA_ROOT.mkdir(parents=True, exist_ok=True)
+
+
+def migrate_legacy_data():
+    if DATA_ROOT.resolve() == LEGACY_DATA_ROOT.resolve() or not LEGACY_DATA_ROOT.exists():
+        return
+    ensure_data_root()
+    legacy_teachers = LEGACY_DATA_ROOT / "teachers.json"
+    if legacy_teachers.exists() and not TEACHERS_FILE.exists():
+        TEACHERS_FILE.write_text(legacy_teachers.read_text(encoding="utf-8"), encoding="utf-8")
+    legacy_secret = LEGACY_DATA_ROOT / "session-secret.txt"
+    if legacy_secret.exists() and not SESSION_SECRET_FILE.exists():
+        SESSION_SECRET_FILE.write_text(legacy_secret.read_text(encoding="utf-8"), encoding="utf-8")
+    legacy_rooms = LEGACY_DATA_ROOT / "rooms"
+    if legacy_rooms.exists():
+        for legacy_room in legacy_rooms.glob("*.json"):
+            target = DATA_DIR / legacy_room.name
+            if not target.exists():
+                target.write_text(legacy_room.read_text(encoding="utf-8"), encoding="utf-8")
+
+
+def storage_status():
+    ensure_data_root()
+    return {
+        "dataRoot": str(DATA_ROOT),
+        "roomsDir": str(DATA_DIR),
+        "persistent": str(DATA_ROOT).replace("\\", "/").startswith("/var/data"),
+        "rooms": len(list(DATA_DIR.glob("*.json"))),
+        "teachersFile": TEACHERS_FILE.exists(),
+    }
 
 
 def now_iso():
@@ -483,17 +518,42 @@ def parse_single_post_path(path):
     return match.groups() if match else None
 
 
-def teacher_history(teacher_id):
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
+def room_belongs_to_teacher(room, teacher):
+    teacher_id = str(teacher.get("id") or "")
+    username = str(teacher.get("username") or "").strip().lower()
+    room_teacher_id = str(room.get("teacherId") or "")
+    room_username = str((room.get("teacher") or {}).get("username") or "").strip().lower()
+    if room_teacher_id and room_teacher_id == teacher_id:
+        return True
+    if username and room_username and room_username == username:
+        return True
+    return not room_teacher_id and not room_username
+
+
+def relink_room_teacher(room_code, room, teacher):
+    changed = False
+    public = sanitize_teacher(public_teacher(teacher))
+    if room.get("teacherId") != teacher.get("id"):
+        room["teacherId"] = teacher.get("id", "")
+        changed = True
+    if room.get("teacher") != public:
+        room["teacher"] = public
+        changed = True
+    if changed:
+        save_room(room_code, room)
+
+
+def teacher_history(teacher):
+    ensure_data_root()
     rooms = []
     for path in DATA_DIR.glob("*.json"):
         room_code = path.stem
         if not ROOM_RE.match(room_code):
             continue
         room = load_room(room_code)
-        room_teacher_id = str(room.get("teacherId") or "")
-        if room_teacher_id and room_teacher_id != teacher_id:
+        if not room_belongs_to_teacher(room, teacher):
             continue
+        relink_room_teacher(room_code, room, teacher)
         courses = room.get("courses", [])
         post_times = []
         total_posts = 0
@@ -523,7 +583,7 @@ def find_course_by_code(course_code):
     course_code = sanitize_course_code(course_code)
     if not course_code:
         return None, None
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    ensure_data_root()
     for path in DATA_DIR.glob("*.json"):
         room_code = path.stem
         if not ROOM_RE.match(room_code):
@@ -539,7 +599,7 @@ def course_code_in_use(course_code, allow_room_code=None, allow_course_id=None):
     course_code = sanitize_course_code(course_code)
     if not course_code:
         return False
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    ensure_data_root()
     for path in DATA_DIR.glob("*.json"):
         room_code = path.stem
         if not ROOM_RE.match(room_code):
@@ -575,13 +635,10 @@ def require_room_owner(handler, room_code):
         json_response(handler, 404, {"error": "Room not found"})
         return None, None
     room = load_room(room_code)
-    if room.get("teacherId") and room.get("teacherId") != teacher.get("id"):
+    if not room_belongs_to_teacher(room, teacher):
         json_response(handler, 403, {"error": "This room belongs to another teacher"})
         return None, None
-    if not room.get("teacherId"):
-        room["teacherId"] = teacher.get("id", "")
-        room["teacher"] = sanitize_teacher(public_teacher(teacher))
-        save_room(room_code, room)
+    relink_room_teacher(room_code, room, teacher)
     return teacher, room
 
 
@@ -621,7 +678,14 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
             teacher = require_teacher(self)
             if not teacher:
                 return
-            json_response(self, 200, {"rooms": teacher_history(teacher["id"])})
+            json_response(self, 200, {"rooms": teacher_history(teacher)})
+            return
+
+        if path == "/api/storage/status":
+            teacher = require_teacher(self)
+            if not teacher:
+                return
+            json_response(self, 200, storage_status())
             return
 
         course_code = parse_course_lookup_path(path)
@@ -950,6 +1014,7 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
 
 
 def main():
+    migrate_legacy_data()
     log_path = ROOT / "server-runtime.log"
     sys.stdout = open(log_path, "a", encoding="utf-8", buffering=1)
     sys.stderr = sys.stdout
