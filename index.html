@@ -4,6 +4,257 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>中文手寫房間公佈欄</title>
+    <link rel="stylesheet" href="./styles.css?v=20260710-grid-moves-with-ink" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="workspace" aria-label="中文手寫房間公佈欄">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow" data-i18n="eyebrow">課堂手寫練習</p>
+            <h1 data-i18n="appTitle">中文手寫房間公佈欄</h1>
+          </div>
+          <div class="top-status">
+            <div class="board-actions" hidden>
+              <button type="button" id="switchRoomButton" class="quiet-button" data-i18n="switchRoom">換房間</button>
+              <button type="button" id="renameRoomButton" class="quiet-button" data-i18n="renameRoom">修改房間名稱</button>
+              <button type="button" id="endCourseButton" class="quiet-button">結束課程並產生新密碼</button>
+              <button type="button" id="deleteRoomButton" class="quiet-button danger-button" data-i18n="deleteRoom">刪除房間</button>
+            </div>
+            <button type="button" id="leaveRoomButton" class="quiet-button top-leave-button" data-i18n="leaveRoom" hidden>離開</button>
+            <label class="language-select">
+              <span data-i18n="languageLabel">語言</span>
+              <select id="languageSelect" aria-label="語言">
+                <option value="zh-Hans">中文简体</option>
+                <option value="zh-Hant">中文繁體</option>
+                <option value="en">English</option>
+                <option value="ja">日本語</option>
+                <option value="vi">Tiếng Việt</option>
+              </select>
+            </label>
+          </div>
+        </header>
+
+        <section class="join-panel" id="joinPanel" aria-label="進入房間">
+          <div class="join-copy">
+            <p class="eyebrow" data-i18n="roomPassword">房間密碼</p>
+            <h2 data-i18n="joinHeadline">老師設定數字，學生輸入後一起進入同一個公佈欄</h2>
+          </div>
+
+          <form id="roomForm" class="room-form" novalidate>
+            <div class="role-toggle" aria-label="選擇身份">
+              <label>
+                <input type="radio" name="role" value="teacher" checked />
+                <span data-i18n="teacher">老師</span>
+              </label>
+              <label>
+                <input type="radio" name="role" value="student" />
+                <span data-i18n="student">學生</span>
+              </label>
+            </div>
+
+            <section class="teacher-login-card" id="teacherLoginCard">
+              <div class="login-head">
+                <div>
+                  <p class="mini-title" data-i18n="teacherLoginTitle">老師帳號</p>
+                  <p id="teacherStatusText" data-i18n="teacherNotSignedIn">尚未登入</p>
+                </div>
+                <button type="button" id="teacherLogoutButton" class="quiet-button" data-i18n="logoutTeacher" hidden>登出</button>
+              </div>
+              <div class="teacher-fields" id="teacherFields">
+                <label>
+                  <span data-i18n="teacherNameLabel">老師姓名</span>
+                  <input id="teacherName" autocomplete="name" maxlength="40" data-i18n-placeholder="teacherNamePlaceholder" placeholder="例如：王老師" />
+                </label>
+                <label>
+                  <span data-i18n="teacherUsernameLabel">帳號</span>
+                  <input id="teacherUsername" autocomplete="username" maxlength="60" data-i18n-placeholder="teacherUsernamePlaceholder" placeholder="例如：teacher01" />
+                </label>
+                <label>
+                  <span data-i18n="teacherPasswordLabel">密碼</span>
+                  <input id="teacherPassword" type="password" autocomplete="current-password" maxlength="80" data-i18n-placeholder="teacherPasswordPlaceholder" placeholder="至少 6 個字" />
+                </label>
+                <div class="teacher-auth-actions">
+                  <button type="button" id="teacherLoginButton" class="quiet-button" data-i18n="loginTeacher">登入</button>
+                  <button type="button" id="teacherRegisterButton" class="quiet-button" data-i18n="registerTeacher">建立帳號</button>
+                  <button type="button" id="teacherResetButton" class="quiet-button wide-auth-action" data-i18n="resetTeacherPassword">忘記密碼</button>
+                </div>
+              </div>
+            </section>
+
+            <div id="roomEntry" class="room-entry">
+              <label>
+                <span data-i18n="roomCodeLabel">房間數字密碼</span>
+                <input id="roomCode" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" data-i18n-placeholder="roomCodePlaceholder" placeholder="例如：246801" required />
+              </label>
+              <button type="submit" class="primary-action" data-i18n="enterRoom">進入房間</button>
+              <p class="form-note" data-i18n="roomNote">老師先設定 4 到 8 位數字；學生輸入同一組數字，就會看到同一個公佈欄。</p>
+            </div>
+            <p class="form-message" id="roomMessage" aria-live="polite"></p>
+          </form>
+        </section>
+
+        <section class="join-panel teacher-dashboard" id="teacherDashboard" hidden>
+          <div class="join-copy">
+            <p class="eyebrow" data-i18n="teacherDashboardEyebrow">老師主畫面</p>
+            <h2 data-i18n="teacherDashboardTitle">新建房間或開啟歷史課程</h2>
+          </div>
+          <div class="room-form">
+            <div class="login-head">
+              <div>
+                <p class="mini-title" data-i18n="teacherLoginTitle">老師帳號</p>
+                <p id="teacherDashboardStatusText"></p>
+              </div>
+              <button type="button" id="teacherDashboardLogoutButton" class="quiet-button" data-i18n="logoutTeacher">登出</button>
+            </div>
+            <form id="teacherRoomForm" class="room-entry" novalidate>
+              <label>
+                <span data-i18n="roomNameLabel">房間名稱</span>
+                <input id="teacherRoomName" maxlength="32" data-i18n-placeholder="roomNamePlaceholder" placeholder="例如：週三中文課" />
+              </label>
+              <input id="teacherRoomCode" type="hidden" />
+              <button type="submit" class="primary-action" data-i18n="enterRoom">進入房間</button>
+              <p class="form-note" data-i18n="roomNote">老師先設定 4 到 8 位數字；學生輸入同一組數字，就會看到同一個公佈欄。</p>
+            </form>
+            <p class="form-message" id="teacherDashboardMessage" aria-live="polite"></p>
+            <section id="teacherHistory" class="teacher-history classroom-history"></section>
+          </div>
+        </section>
+
+        <div class="layout" id="classroomLayout" hidden>
+          <section class="writer-panel" aria-label="學生手寫板">
+            <section class="course-panel" id="coursePanel">
+              <div class="course-controls">
+                <label>
+                  <span data-i18n="selectCourse">選擇課程</span>
+                  <select id="courseSelect"></select>
+                </label>
+                <form id="courseForm" class="course-form">
+                  <label>
+                    <span data-i18n="newCourseName">新增課程資料夾</span>
+                    <input id="courseNameInput" maxlength="40" data-i18n-placeholder="newCoursePlaceholder" placeholder="例如：三年級第一課" />
+                  </label>
+                  <input id="courseCodeInput" type="hidden" />
+                  <button type="submit" class="quiet-button" data-i18n="addCourse">新增</button>
+                  <button type="button" id="renameCourseButton" class="quiet-button" data-i18n="renameCourse">修改名稱</button>
+                  <button type="button" id="deleteCourseButton" class="quiet-button danger-button" data-i18n="deleteCourse">刪除資料夾</button>
+                </form>
+              </div>
+            </section>
+
+            <form id="postForm" class="student-form">
+              <label>
+                <span data-i18n="studentName">學生姓名</span>
+                <input id="studentName" autocomplete="name" maxlength="18" data-i18n-placeholder="studentNamePlaceholder" placeholder="例如：小明" required />
+              </label>
+              <label>
+                <span data-i18n="practiceTopic">練習主題</span>
+                <input id="promptText" maxlength="32" data-i18n-placeholder="promptPlaceholder" placeholder="例如：今天的句子" />
+              </label>
+            </form>
+
+            <div class="canvas-card">
+              <div class="canvas-toolbar" aria-label="手寫工具">
+                <button type="button" class="tool-button active" data-mode="draw" data-i18n-title="drawTitle" title="寫字" data-i18n="pen">筆</button>
+                <button type="button" class="tool-button" data-mode="erase" data-i18n-title="eraseTitle" title="橡皮擦" data-i18n="eraser">擦</button>
+                <label class="range-control" data-i18n-title="brushTitle" title="筆畫粗細">
+                  <span data-i18n="brushSize">粗細</span>
+                  <input id="brushSize" type="range" min="3" max="26" value="10" />
+                </label>
+                <label class="color-control" data-i18n-title="inkTitle" title="墨水顏色">
+                  <span data-i18n="inkColor">墨色</span>
+                  <input id="inkColor" type="color" value="#111827" />
+                </label>
+                <button type="button" id="undoButton" class="tool-button" data-i18n-title="undoTitle" title="復原">↶</button>
+                <button type="button" id="clearButton" class="tool-button danger" data-i18n-title="clearTitle" title="清空" data-i18n="clearShort">清</button>
+                <div class="canvas-size-controls" aria-label="調整手寫區大小">
+                  <button type="button" id="canvasShrinkButton" class="icon-button canvas-size-button" data-i18n-title="canvasShrinkTitle" title="縮小手寫區" aria-label="縮小手寫區">−</button>
+                  <button type="button" id="canvasGrowButton" class="icon-button canvas-size-button" data-i18n-title="canvasGrowTitle" title="放大手寫區" aria-label="放大手寫區">＋</button>
+                </div>
+                <label class="canvas-scale-control" data-i18n-title="canvasScaleTitle" title="畫布縮放比例">
+                  <span id="canvasScaleValue">100%</span>
+                  <input id="canvasScaleInput" type="range" min="50" max="150" step="1" value="100" data-i18n-aria-label="canvasScaleTitle" aria-label="畫布縮放比例" />
+                </label>
+              </div>
+
+              <div class="canvas-wrap">
+                <div class="canvas-stage">
+                  <canvas id="writingCanvas" data-i18n-aria-label="canvasLabel" aria-label="請在這裡手寫中文"></canvas>
+                  <div class="paper-lines" aria-hidden="true"></div>
+                </div>
+              </div>
+
+              <div class="actions">
+                <button type="button" id="submitButton" class="primary-action" data-i18n="submitPost">送到公佈欄</button>
+                <p id="helperText">請先進入房間，再開始書寫。</p>
+              </div>
+            </div>
+          </section>
+
+          <aside class="board-panel" aria-label="公佈欄">
+            <div class="board-head">
+              <div class="board-title-row">
+                <h2 data-i18n="boardTitle">公佈欄</h2>
+                <button type="button" id="fullscreenBoardButton" class="icon-button" title="放大公佈欄" aria-label="放大公佈欄" aria-pressed="false">⛶</button>
+              </div>
+              <p class="eyebrow" id="boardCourseLabel" data-i18n="sameRoomVisible">同房間可見</p>
+            </div>
+
+            <div class="filter-row" role="search">
+              <input id="searchInput" data-i18n-placeholder="searchPlaceholder" placeholder="搜尋姓名或主題" data-i18n-aria-label="searchLabel" aria-label="搜尋作品" />
+              <select id="sortSelect" data-i18n-aria-label="sortLabel" aria-label="排序">
+                <option value="newest" data-i18n="sortNewest">最新</option>
+                <option value="oldest" data-i18n="sortOldest">最舊</option>
+                <option value="name" data-i18n="sortName">姓名</option>
+              </select>
+            </div>
+
+            <div id="boardList" class="board-list" aria-live="polite"></div>
+            <template id="emptyTemplate">
+              <div class="empty-state">
+                <strong data-i18n="emptyTitle">這個課程還沒有作品</strong>
+                <span data-i18n="emptyText">學生送出手寫作品後，會出現在這裡。</span>
+              </div>
+            </template>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <div id="roomNameModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="roomNameModalTitle" hidden>
+      <form class="modal-card" id="roomNameForm">
+        <h2 id="roomNameModalTitle" data-i18n="renameRoom">修改房間名稱</h2>
+        <label>
+          <span data-i18n="roomNameLabel">房間名稱</span>
+          <input id="roomNameModalInput" maxlength="32" data-i18n-placeholder="roomNamePlaceholder" placeholder="例如：週三中文課" />
+        </label>
+        <div class="modal-actions">
+          <button type="button" id="roomNameCancelButton" class="quiet-button" data-i18n="cancelEdit">取消</button>
+          <button type="submit" class="primary-action" data-i18n="saveEdit">儲存</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="confirmModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle" hidden>
+      <section class="modal-card confirm-card">
+        <h2 id="confirmModalTitle" data-i18n="confirmTitle">確認操作</h2>
+        <p id="confirmModalMessage" class="confirm-message"></p>
+        <div class="modal-actions">
+          <button type="button" id="confirmCancelButton" class="quiet-button" data-i18n="cancelEdit">取消</button>
+          <button type="button" id="confirmOkButton" class="primary-action danger-action" data-i18n="confirmOk">確認刪除</button>
+        </div>
+      </section>
+    </div>
+
+    <script src="./app.js?v=20260710-delete-stay"></script>
+  </body>
+</html>
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>中文手寫房間公佈欄</title>
     <link rel="stylesheet" href="./styles.css?v=20260705-student-own-works" />
   </head>
   <body>
