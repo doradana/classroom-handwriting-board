@@ -1,0 +1,22 @@
+{
+  "room": "2222",
+  "name": "中文",
+  "teacher": {
+    "name": "林佑臻",
+    "email": "",
+    "picture": ""
+  },
+  "teacherId": "d50ddde577e04293aa1878ae53c1f598",
+  "courses": [
+    {
+      "id": "default",
+      "name": "預設課程",
+      "code": "356407",
+      "createdAt": "2026-07-04T15:14:38.945450+00:00"
+    }
+  ],
+  "activeCourseId": "default",
+  "postsByCourse": {
+    "default": []
+  }
+}
