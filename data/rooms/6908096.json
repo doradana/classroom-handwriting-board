@@ -1,0 +1,31 @@
+{
+  "room": "6908096",
+  "name": "",
+  "teacher": {
+    "name": "??????",
+    "email": "",
+    "picture": ""
+  },
+  "teacherId": "e67db6d2284c46f9b784f28948c50e25",
+  "courses": [
+    {
+      "id": "default",
+      "name": "預設課程",
+      "code": "676580",
+      "createdAt": "2026-06-30T00:33:45.163519+00:00"
+    }
+  ],
+  "activeCourseId": "default",
+  "postsByCourse": {
+    "default": [
+      {
+        "id": "68060636-3789-4485-82ae-976c9c46c8b3",
+        "name": "??A",
+        "prompt": "?",
+        "image": "data:image/png;base64,iVBORw0KGgo=",
+        "courseId": "default",
+        "createdAt": "2026-06-30T00:33:45.180373+00:00"
+      }
+    ]
+  }
+}
