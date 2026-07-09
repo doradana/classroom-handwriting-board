@@ -50,16 +50,16 @@ def migrate_legacy_data():
     ensure_data_root()
     legacy_teachers = LEGACY_DATA_ROOT / "teachers.json"
     if legacy_teachers.exists() and not TEACHERS_FILE.exists():
-        TEACHERS_FILE.write_text(legacy_teachers.read_text(encoding="utf-8"), encoding="utf-8")
+        TEACHERS_FILE.write_bytes(legacy_teachers.read_bytes())
     legacy_secret = LEGACY_DATA_ROOT / "session-secret.txt"
     if legacy_secret.exists() and not SESSION_SECRET_FILE.exists():
-        SESSION_SECRET_FILE.write_text(legacy_secret.read_text(encoding="utf-8"), encoding="utf-8")
+        SESSION_SECRET_FILE.write_bytes(legacy_secret.read_bytes())
     legacy_rooms = LEGACY_DATA_ROOT / "rooms"
     if legacy_rooms.exists():
         for legacy_room in legacy_rooms.glob("*.json"):
             target = DATA_DIR / legacy_room.name
             if not target.exists():
-                target.write_text(legacy_room.read_text(encoding="utf-8"), encoding="utf-8")
+                target.write_bytes(legacy_room.read_bytes())
 
 
 def storage_status():
@@ -527,7 +527,7 @@ def room_belongs_to_teacher(room, teacher):
         return True
     if username and room_username and room_username == username:
         return True
-    return not room_teacher_id and not room_username
+    return not room_username
 
 
 def relink_room_teacher(room_code, room, teacher):
