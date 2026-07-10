@@ -167,7 +167,7 @@ def reset_teacher_password(payload):
     username = str(payload.get("username", "")).strip().lower()
     name = str(payload.get("name", "")).strip()
     password = str(payload.get("password", ""))
-    if not USERNAME_RE.match(username) or not name or len(password) < 6:
+    if not USERNAME_RE.match(username) or len(password) < 6:
         return None, "Invalid reset request"
     data = load_teachers()
     teacher = None
@@ -175,8 +175,10 @@ def reset_teacher_password(payload):
         if str(item.get("username", "")).lower() == username:
             teacher = item
             break
-    if not teacher or str(teacher.get("name", "")).strip() != name:
+    if not teacher:
         return None, "Invalid reset request"
+    if name:
+        teacher["name"] = name[:40]
     salt, digest = password_hash(password)
     teacher["salt"] = salt
     teacher["passwordHash"] = digest
