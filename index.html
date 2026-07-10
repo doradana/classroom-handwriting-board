@@ -37,8 +37,8 @@
 
         <section class="join-panel" id="joinPanel" aria-label="進入房間">
           <div class="join-copy">
-            <p class="eyebrow" data-i18n="roomPassword">房間密碼</p>
-            <h2 data-i18n="joinHeadline">老師設定數字，學生輸入後一起進入同一個公佈欄</h2>
+            <p class="eyebrow" data-i18n="roomPassword">課程密碼</p>
+            <h2 data-i18n="joinHeadline">學生輸入課程密碼後，只會進入該課程的公佈欄</h2>
           </div>
 
           <form id="roomForm" class="room-form" novalidate>
@@ -84,11 +84,11 @@
 
             <div id="roomEntry" class="room-entry">
               <label>
-                <span data-i18n="roomCodeLabel">房間數字密碼</span>
+                <span data-i18n="roomCodeLabel">課程密碼</span>
                 <input id="roomCode" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" data-i18n-placeholder="roomCodePlaceholder" placeholder="例如：246801" required />
               </label>
-              <button type="submit" class="primary-action" data-i18n="enterRoom">進入房間</button>
-              <p class="form-note" data-i18n="roomNote">老師先設定 4 到 8 位數字；學生輸入同一組數字，就會看到同一個公佈欄。</p>
+              <button type="submit" class="primary-action" data-i18n="enterRoom">進入課程</button>
+              <p class="form-note" data-i18n="roomNote">老師進入課程不需要密碼；系統會為每個課程自動產生 6 位數字密碼，給學生輸入使用。</p>
             </div>
             <p class="form-message" id="roomMessage" aria-live="polite"></p>
           </form>
@@ -97,7 +97,7 @@
         <section class="join-panel teacher-dashboard" id="teacherDashboard" hidden>
           <div class="join-copy">
             <p class="eyebrow" data-i18n="teacherDashboardEyebrow">老師主畫面</p>
-            <h2 data-i18n="teacherDashboardTitle">新建房間或開啟歷史課程</h2>
+            <h2 data-i18n="teacherDashboardTitle">建立或開啟課程資料夾</h2>
           </div>
           <div class="room-form">
             <div class="login-head">
@@ -113,8 +113,8 @@
                 <input id="teacherRoomName" maxlength="32" data-i18n-placeholder="roomNamePlaceholder" placeholder="例如：週三中文課" />
               </label>
               <input id="teacherRoomCode" type="hidden" />
-              <button type="submit" class="primary-action" data-i18n="enterRoom">進入房間</button>
-              <p class="form-note" data-i18n="roomNote">老師先設定 4 到 8 位數字；學生輸入同一組數字，就會看到同一個公佈欄。</p>
+              <button type="submit" class="primary-action" data-i18n="enterRoom">進入課程</button>
+              <p class="form-note" data-i18n="roomNote">老師進入課程不需要密碼；系統會為每個課程自動產生 6 位數字密碼，給學生輸入使用。</p>
             </form>
             <p class="form-message" id="teacherDashboardMessage" aria-live="polite"></p>
             <section id="teacherHistory" class="teacher-history classroom-history"></section>
