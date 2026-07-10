@@ -1235,6 +1235,32 @@ async function teacherAuth(mode) {
     teacherPassword.value = "";
     await continueAfterTeacherAuth(mode === "register" ? "registerSuccess" : "loginSuccess");
   } catch {
+    try {
+      if (mode === "login" && payload.name && payload.password.length >= 6) {
+        const result = await apiRequest("/api/teacher/register", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+        localStorage.setItem(TEACHER_TOKEN_KEY, result.token);
+        saveTeacherProfile(result.teacher || {});
+        teacherPassword.value = "";
+        await continueAfterTeacherAuth("registerSuccess");
+        return;
+      }
+      if (mode === "register") {
+        const result = await apiRequest("/api/teacher/login", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+        localStorage.setItem(TEACHER_TOKEN_KEY, result.token);
+        saveTeacherProfile(result.teacher || {});
+        teacherPassword.value = "";
+        await continueAfterTeacherAuth("loginSuccess");
+        return;
+      }
+    } catch {
+      // Keep the clearer original message for the button the teacher pressed.
+    }
     roomMessage.textContent = t(mode === "register" ? "registerFailed" : "loginFailed");
   } finally {
     teacherLoginButton.disabled = false;
