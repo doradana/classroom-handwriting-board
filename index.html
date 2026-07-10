@@ -1,94 +1,94 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="zh-Hant">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>銝剜??神?輸??砌?甈?/title>
+    <title>中文手寫房間公佈欄</title>
     <link rel="stylesheet" href="./styles.css?v=20260710-grid-moves-with-ink" />
   </head>
   <body>
     <main class="app-shell">
-      <section class="workspace" aria-label="銝剜??神?輸??砌?甈?>
+      <section class="workspace" aria-label="中文手寫房間公佈欄">
         <header class="topbar">
           <div>
-            <p class="eyebrow" data-i18n="eyebrow">隤脣??神蝺渡?</p>
-            <h1 data-i18n="appTitle">銝剜??神?輸??砌?甈?/h1>
+            <p class="eyebrow" data-i18n="eyebrow">課堂手寫練習</p>
+            <h1 data-i18n="appTitle">中文手寫房間公佈欄</h1>
           </div>
           <div class="top-status">
             <div class="board-actions" hidden>
-              <button type="button" id="switchRoomButton" class="quiet-button" data-i18n="switchRoom">???/button>
-              <button type="button" id="renameRoomButton" class="quiet-button" data-i18n="renameRoom">靽格?輸??迂</button>
-              <button type="button" id="endCourseButton" class="quiet-button">蝯?隤脩?銝衣?撖Ⅳ</button>
-              <button type="button" id="deleteRoomButton" class="quiet-button danger-button" data-i18n="deleteRoom">?芷?輸?</button>
+              <button type="button" id="switchRoomButton" class="quiet-button" data-i18n="switchRoom">換房間</button>
+              <button type="button" id="renameRoomButton" class="quiet-button" data-i18n="renameRoom">修改房間名稱</button>
+              <button type="button" id="endCourseButton" class="quiet-button">結束課程並產生新密碼</button>
+              <button type="button" id="deleteRoomButton" class="quiet-button danger-button" data-i18n="deleteRoom">刪除房間</button>
             </div>
-            <button type="button" id="leaveRoomButton" class="quiet-button top-leave-button" data-i18n="leaveRoom" hidden>?ａ?</button>
+            <button type="button" id="leaveRoomButton" class="quiet-button top-leave-button" data-i18n="leaveRoom" hidden>離開</button>
             <label class="language-select">
-              <span data-i18n="languageLabel">隤?</span>
-              <select id="languageSelect" aria-label="隤?">
-                <option value="zh-Hans">銝剜?蝞雿?/option>
-                <option value="zh-Hant">銝剜?蝜?</option>
+              <span data-i18n="languageLabel">語言</span>
+              <select id="languageSelect" aria-label="語言">
+                <option value="zh-Hans">中文簡體</option>
+                <option value="zh-Hant">中文繁體</option>
                 <option value="en">English</option>
-                <option value="ja">?交隤?/option>
-                <option value="vi">Ti廕積g Vi廙</option>
+                <option value="ja">日本語</option>
+                <option value="vi">Tiếng Việt</option>
               </select>
             </label>
           </div>
         </header>
 
-        <section class="join-panel" id="joinPanel" aria-label="?脣?輸?">
+        <section class="join-panel" id="joinPanel" aria-label="進入課程">
           <div class="join-copy">
-            <p class="eyebrow" data-i18n="roomPassword">隤脩?撖Ⅳ</p>
-            <h2 data-i18n="joinHeadline">摮貊?頛詨隤脩?撖Ⅳ敺??芣??脣閰脰玨蝔??砌?甈?/h2>
+            <p class="eyebrow" data-i18n="roomPassword">課程密碼</p>
+            <h2 data-i18n="joinHeadline">學生輸入課程密碼後，只會進入該課程的公佈欄</h2>
           </div>
 
           <form id="roomForm" class="room-form" novalidate>
-            <div class="role-toggle" aria-label="?豢?頨思遢">
+            <div class="role-toggle" aria-label="選擇身分">
               <label>
                 <input type="radio" name="role" value="teacher" checked />
-                <span data-i18n="teacher">?葦</span>
+                <span data-i18n="teacher">老師</span>
               </label>
               <label>
                 <input type="radio" name="role" value="student" />
-                <span data-i18n="student">摮貊?</span>
+                <span data-i18n="student">學生</span>
               </label>
             </div>
 
             <section class="teacher-login-card" id="teacherLoginCard">
               <div class="login-head">
                 <div>
-                  <p class="mini-title" data-i18n="teacherLoginTitle">?葦撣唾?</p>
-                  <p id="teacherStatusText" data-i18n="teacherNotSignedIn">撠?餃</p>
+                  <p class="mini-title" data-i18n="teacherLoginTitle">老師帳號</p>
+                  <p id="teacherStatusText" data-i18n="teacherNotSignedIn">尚未記錄老師資料</p>
                 </div>
-                <button type="button" id="teacherLogoutButton" class="quiet-button" data-i18n="logoutTeacher" hidden>?餃</button>
+                <button type="button" id="teacherLogoutButton" class="quiet-button" data-i18n="logoutTeacher" hidden>登出</button>
               </div>
               <div class="teacher-fields" id="teacherFields">
                 <label>
-                  <span data-i18n="teacherNameLabel">?葦憪?</span>
-                  <input id="teacherName" autocomplete="name" maxlength="40" data-i18n-placeholder="teacherNamePlaceholder" placeholder="靘?嚗??葦" />
+                  <span data-i18n="teacherNameLabel">老師姓名</span>
+                  <input id="teacherName" autocomplete="name" maxlength="40" data-i18n-placeholder="teacherNamePlaceholder" placeholder="例如：王老師" />
                 </label>
                 <label>
-                  <span data-i18n="teacherUsernameLabel">撣唾?</span>
-                  <input id="teacherUsername" autocomplete="username" maxlength="60" data-i18n-placeholder="teacherUsernamePlaceholder" placeholder="靘?嚗eacher01" />
+                  <span data-i18n="teacherUsernameLabel">帳號</span>
+                  <input id="teacherUsername" autocomplete="username" maxlength="60" data-i18n-placeholder="teacherUsernamePlaceholder" placeholder="例如：teacher01" />
                 </label>
                 <label>
-                  <span data-i18n="teacherPasswordLabel">撖Ⅳ</span>
-                  <input id="teacherPassword" type="password" autocomplete="current-password" maxlength="80" data-i18n-placeholder="teacherPasswordPlaceholder" placeholder="?喳? 6 ??" />
+                  <span data-i18n="teacherPasswordLabel">密碼</span>
+                  <input id="teacherPassword" type="password" autocomplete="current-password" maxlength="80" data-i18n-placeholder="teacherPasswordPlaceholder" placeholder="至少 6 個字" />
                 </label>
                 <div class="teacher-auth-actions">
-                  <button type="button" id="teacherLoginButton" class="quiet-button" data-i18n="loginTeacher">?餃</button>
-                  <button type="button" id="teacherRegisterButton" class="quiet-button" data-i18n="registerTeacher">撱箇?撣唾?</button>
-                  <button type="button" id="teacherResetButton" class="quiet-button wide-auth-action" data-i18n="resetTeacherPassword">敹?撖Ⅳ</button>
+                  <button type="button" id="teacherLoginButton" class="quiet-button" data-i18n="loginTeacher">登入</button>
+                  <button type="button" id="teacherRegisterButton" class="quiet-button" data-i18n="registerTeacher">建立帳號</button>
+                  <button type="button" id="teacherResetButton" class="quiet-button wide-auth-action" data-i18n="resetTeacherPassword">忘記密碼</button>
                 </div>
               </div>
             </section>
 
             <div id="roomEntry" class="room-entry" hidden>
               <label>
-                <span data-i18n="roomCodeLabel">隤脩?撖Ⅳ</span>
-                <input id="roomCode" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" data-i18n-placeholder="roomCodePlaceholder" placeholder="靘?嚗?46801" required />
+                <span data-i18n="roomCodeLabel">課程密碼</span>
+                <input id="roomCode" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" data-i18n-placeholder="roomCodePlaceholder" placeholder="例如：246801" required />
               </label>
-              <button type="submit" class="primary-action" data-i18n="enterRoom">?脣隤脩?</button>
-              <p class="form-note" data-i18n="roomNote">?葦?脣隤脩?銝?閬?蝣潘?蝟餌絞?瘥玨蝔???6 雿摮?蝣潘?蝯血飛?撓?乩蝙?具?/p>
+              <button type="submit" class="primary-action" data-i18n="enterRoom">進入課程</button>
+              <p class="form-note" data-i18n="roomNote">老師進入課程不需要密碼；系統會為每個課程自動產生 6 位數字密碼，給學生輸入使用。</p>
             </div>
             <p class="form-message" id="roomMessage" aria-live="polite"></p>
           </form>
@@ -96,25 +96,25 @@
 
         <section class="join-panel teacher-dashboard" id="teacherDashboard" hidden>
           <div class="join-copy">
-            <p class="eyebrow" data-i18n="teacherDashboardEyebrow">?葦銝餌??/p>
-            <h2 data-i18n="teacherDashboardTitle">撱箇????玨蝔??冗</h2>
+            <p class="eyebrow" data-i18n="teacherDashboardEyebrow">老師主畫面</p>
+            <h2 data-i18n="teacherDashboardTitle">建立或開啟課程資料夾</h2>
           </div>
           <div class="room-form">
             <div class="login-head">
               <div>
-                <p class="mini-title" data-i18n="teacherLoginTitle">?葦撣唾?</p>
+                <p class="mini-title" data-i18n="teacherLoginTitle">老師帳號</p>
                 <p id="teacherDashboardStatusText"></p>
               </div>
-              <button type="button" id="teacherDashboardLogoutButton" class="quiet-button" data-i18n="logoutTeacher">?餃</button>
+              <button type="button" id="teacherDashboardLogoutButton" class="quiet-button" data-i18n="logoutTeacher">登出</button>
             </div>
             <form id="teacherRoomForm" class="room-entry" novalidate>
               <label>
-                <span data-i18n="roomNameLabel">?輸??迂</span>
-                <input id="teacherRoomName" maxlength="32" data-i18n-placeholder="roomNamePlaceholder" placeholder="靘?嚗曹?銝剜?隤? />
+                <span data-i18n="roomNameLabel">房間名稱</span>
+                <input id="teacherRoomName" maxlength="32" data-i18n-placeholder="roomNamePlaceholder" placeholder="例如：週三中文課" />
               </label>
               <input id="teacherRoomCode" type="hidden" />
-              <button type="submit" class="primary-action" data-i18n="enterRoom">?脣隤脩?</button>
-              <p class="form-note" data-i18n="roomNote">?葦?脣隤脩?銝?閬?蝣潘?蝟餌絞?瘥玨蝔???6 雿摮?蝣潘?蝯血飛?撓?乩蝙?具?/p>
+              <button type="submit" class="primary-action" data-i18n="enterRoom">進入課程</button>
+              <p class="form-note" data-i18n="roomNote">老師進入課程不需要密碼；系統會為每個課程自動產生 6 位數字密碼，給學生輸入使用。</p>
             </form>
             <p class="form-message" id="teacherDashboardMessage" aria-live="polite"></p>
             <section id="teacherHistory" class="teacher-history classroom-history"></section>
@@ -122,98 +122,98 @@
         </section>
 
         <div class="layout" id="classroomLayout" hidden>
-          <section class="writer-panel" aria-label="摮貊??神??>
+          <section class="writer-panel" aria-label="學生手寫區">
             <section class="course-panel" id="coursePanel">
               <div class="course-controls">
                 <label>
-                  <span data-i18n="selectCourse">?豢?隤脩?</span>
+                  <span data-i18n="courseFolder">課程資料夾</span>
                   <select id="courseSelect"></select>
                 </label>
                 <form id="courseForm" class="course-form">
                   <label>
-                    <span data-i18n="newCourseName">?啣?隤脩?鞈?憭?/span>
-                    <input id="courseNameInput" maxlength="40" data-i18n-placeholder="newCoursePlaceholder" placeholder="靘?嚗?撟渡?蝚砌?隤? />
+                    <span data-i18n="courseName">課程名稱</span>
+                    <input id="courseNameInput" maxlength="40" data-i18n-placeholder="newCoursePlaceholder" placeholder="例如：三年級第一課" />
                   </label>
                   <input id="courseCodeInput" type="hidden" />
-                  <button type="submit" class="quiet-button" data-i18n="addCourse">?啣?</button>
-                  <button type="button" id="renameCourseButton" class="quiet-button" data-i18n="renameCourse">靽格?迂</button>
-                  <button type="button" id="deleteCourseButton" class="quiet-button danger-button" data-i18n="deleteCourse">?芷鞈?憭?/button>
+                  <button type="submit" class="quiet-button" data-i18n="addCourse">新增</button>
+                  <button type="button" id="renameCourseButton" class="quiet-button" data-i18n="renameCourse">修改名稱</button>
+                  <button type="button" id="deleteCourseButton" class="quiet-button danger-button" data-i18n="deleteCourse">刪除資料夾</button>
                 </form>
               </div>
             </section>
 
             <form id="postForm" class="student-form">
               <label>
-                <span data-i18n="studentName">摮貊?憪?</span>
-                <input id="studentName" autocomplete="name" maxlength="18" data-i18n-placeholder="studentNamePlaceholder" placeholder="靘?嚗??? required />
+                <span data-i18n="studentName">學生姓名</span>
+                <input id="studentName" autocomplete="name" maxlength="18" data-i18n-placeholder="studentNamePlaceholder" placeholder="例如：小明" required />
               </label>
               <label>
-                <span data-i18n="practiceTopic">蝺渡?銝駁?</span>
-                <input id="promptText" maxlength="32" data-i18n-placeholder="promptPlaceholder" placeholder="靘?嚗?憭拍??亙?" />
+                <span data-i18n="practiceTopic">練習主題</span>
+                <input id="promptText" maxlength="32" data-i18n-placeholder="promptPlaceholder" placeholder="例如：今天的句子" />
               </label>
             </form>
 
             <div class="canvas-card">
-              <div class="canvas-toolbar" aria-label="?神撌亙">
-                <button type="button" class="tool-button active" data-mode="draw" data-i18n-title="drawTitle" title="撖怠?" data-i18n="pen">蝑?/button>
-                <button type="button" class="tool-button" data-mode="erase" data-i18n-title="eraseTitle" title="璈∠?? data-i18n="eraser">??/button>
-                <label class="range-control" data-i18n-title="brushTitle" title="蝑蝎敦">
-                  <span data-i18n="brushSize">蝎敦</span>
+              <div class="canvas-toolbar" aria-label="手寫工具">
+                <button type="button" class="tool-button active" data-mode="draw" data-i18n-title="drawTitle" title="畫筆" data-i18n="pen">筆</button>
+                <button type="button" class="tool-button" data-mode="erase" data-i18n-title="eraseTitle" title="橡皮擦" data-i18n="eraser">擦</button>
+                <label class="range-control" data-i18n-title="brushTitle" title="筆畫粗細">
+                  <span data-i18n="brushSize">粗細</span>
                   <input id="brushSize" type="range" min="3" max="26" value="10" />
                 </label>
-                <label class="color-control" data-i18n-title="inkTitle" title="憓冽偌憿">
-                  <span data-i18n="inkColor">憓刻</span>
+                <label class="color-control" data-i18n-title="inkTitle" title="墨色">
+                  <span data-i18n="inkColor">墨色</span>
                   <input id="inkColor" type="color" value="#111827" />
                 </label>
-                <button type="button" id="undoButton" class="tool-button" data-i18n-title="undoTitle" title="敺拙?">??/button>
-                <button type="button" id="clearButton" class="tool-button danger" data-i18n-title="clearTitle" title="皜征" data-i18n="clearShort">皜?/button>
-                <div class="canvas-size-controls" aria-label="隤踵?神?憭批?">
-                  <button type="button" id="canvasShrinkButton" class="icon-button canvas-size-button" data-i18n-title="canvasShrinkTitle" title="蝮桀??神?" aria-label="蝮桀??神?">??/button>
-                  <button type="button" id="canvasGrowButton" class="icon-button canvas-size-button" data-i18n-title="canvasGrowTitle" title="?曉之?神?" aria-label="?曉之?神?">嚗?/button>
+                <button type="button" id="undoButton" class="tool-button" data-i18n-title="undoTitle" title="復原">↶</button>
+                <button type="button" id="clearButton" class="tool-button danger" data-i18n-title="clearTitle" title="清除" data-i18n="clearShort">清</button>
+                <div class="canvas-size-controls" aria-label="調整畫布縮放">
+                  <button type="button" id="canvasShrinkButton" class="icon-button canvas-size-button" data-i18n-title="canvasShrinkTitle" title="縮小畫布" aria-label="縮小畫布">−</button>
+                  <button type="button" id="canvasGrowButton" class="icon-button canvas-size-button" data-i18n-title="canvasGrowTitle" title="放大畫布" aria-label="放大畫布">＋</button>
                 </div>
-                <label class="canvas-scale-control" data-i18n-title="canvasScaleTitle" title="?怠?蝮格瘥?">
+                <label class="canvas-scale-control" data-i18n-title="canvasScaleTitle" title="畫布縮放">
                   <span id="canvasScaleValue">100%</span>
-                  <input id="canvasScaleInput" type="range" min="50" max="150" step="1" value="100" data-i18n-aria-label="canvasScaleTitle" aria-label="?怠?蝮格瘥?" />
+                  <input id="canvasScaleInput" type="range" min="50" max="150" step="1" value="100" data-i18n-aria-label="canvasScaleTitle" aria-label="畫布縮放" />
                 </label>
               </div>
 
               <div class="canvas-wrap">
                 <div class="canvas-stage">
-                  <canvas id="writingCanvas" data-i18n-aria-label="canvasLabel" aria-label="隢?ㄐ?神銝剜?"></canvas>
+                  <canvas id="writingCanvas" data-i18n-aria-label="canvasLabel" aria-label="在這裡手寫中文"></canvas>
                   <div class="paper-lines" aria-hidden="true"></div>
                 </div>
               </div>
 
               <div class="actions">
-                <button type="button" id="submitButton" class="primary-action" data-i18n="submitPost">??砌?甈?/button>
-                <p id="helperText">隢??脣?輸?嚗????詨神??/p>
+                <button type="button" id="submitButton" class="primary-action" data-i18n="submitPost">送到公佈欄</button>
+                <p id="helperText">寫完後送出；同房間、同課程的人都會看到。</p>
               </div>
             </div>
           </section>
 
-          <aside class="board-panel" aria-label="?砌?甈?>
+          <aside class="board-panel" aria-label="公佈欄">
             <div class="board-head">
               <div class="board-title-row">
-                <h2 data-i18n="boardTitle">?砌?甈?/h2>
-                <button type="button" id="fullscreenBoardButton" class="icon-button" title="?曉之?砌?甈? aria-label="?曉之?砌?甈? aria-pressed="false">??/button>
+                <h2 data-i18n="boardTitle">公佈欄</h2>
+                <button type="button" id="fullscreenBoardButton" class="icon-button" title="放大公佈欄" aria-label="放大公佈欄" aria-pressed="false">⛶</button>
               </div>
-              <p class="eyebrow" id="boardCourseLabel" data-i18n="sameRoomVisible">??閬?/p>
+              <p class="eyebrow" id="boardCourseLabel" data-i18n="sameRoomVisible">同課程可見</p>
             </div>
 
             <div class="filter-row" role="search">
-              <input id="searchInput" data-i18n-placeholder="searchPlaceholder" placeholder="??憪??蜓憿? data-i18n-aria-label="searchLabel" aria-label="??雿?" />
-              <select id="sortSelect" data-i18n-aria-label="sortLabel" aria-label="??">
-                <option value="newest" data-i18n="sortNewest">???/option>
-                <option value="oldest" data-i18n="sortOldest">???/option>
-                <option value="name" data-i18n="sortName">憪?</option>
+              <input id="searchInput" data-i18n-placeholder="searchPlaceholder" placeholder="搜尋姓名或主題" data-i18n-aria-label="searchLabel" aria-label="搜尋作品" />
+              <select id="sortSelect" data-i18n-aria-label="sortLabel" aria-label="排序">
+                <option value="newest" data-i18n="sortNewest">最新</option>
+                <option value="oldest" data-i18n="sortOldest">最舊</option>
+                <option value="name" data-i18n="sortName">姓名</option>
               </select>
             </div>
 
             <div id="boardList" class="board-list" aria-live="polite"></div>
             <template id="emptyTemplate">
               <div class="empty-state">
-                <strong data-i18n="emptyTitle">?玨蝔?瘝?雿?</strong>
-                <span data-i18n="emptyText">摮貊???神雿?敺???曉?ㄐ??/span>
+                <strong data-i18n="emptyTitle">這個課程還沒有作品</strong>
+                <span data-i18n="emptyText">學生送出手寫作品後，會出現在這裡。</span>
               </div>
             </template>
           </aside>
@@ -223,25 +223,25 @@
 
     <div id="roomNameModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="roomNameModalTitle" hidden>
       <form class="modal-card" id="roomNameForm">
-        <h2 id="roomNameModalTitle" data-i18n="renameRoom">靽格?輸??迂</h2>
+        <h2 id="roomNameModalTitle" data-i18n="renameRoom">修改房間名稱</h2>
         <label>
-          <span data-i18n="roomNameLabel">?輸??迂</span>
-          <input id="roomNameModalInput" maxlength="32" data-i18n-placeholder="roomNamePlaceholder" placeholder="靘?嚗曹?銝剜?隤? />
+          <span data-i18n="roomNameLabel">房間名稱</span>
+          <input id="roomNameModalInput" maxlength="32" data-i18n-placeholder="roomNamePlaceholder" placeholder="例如：週三中文課" />
         </label>
         <div class="modal-actions">
-          <button type="button" id="roomNameCancelButton" class="quiet-button" data-i18n="cancelEdit">??</button>
-          <button type="submit" class="primary-action" data-i18n="saveEdit">?脣?</button>
+          <button type="button" id="roomNameCancelButton" class="quiet-button" data-i18n="cancelEdit">取消</button>
+          <button type="submit" class="primary-action" data-i18n="saveEdit">儲存</button>
         </div>
       </form>
     </div>
 
     <div id="confirmModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle" hidden>
       <section class="modal-card confirm-card">
-        <h2 id="confirmModalTitle" data-i18n="confirmTitle">蝣箄???</h2>
+        <h2 id="confirmModalTitle" data-i18n="confirmTitle">請確認</h2>
         <p id="confirmModalMessage" class="confirm-message"></p>
         <div class="modal-actions">
-          <button type="button" id="confirmCancelButton" class="quiet-button" data-i18n="cancelEdit">??</button>
-          <button type="button" id="confirmOkButton" class="primary-action danger-action" data-i18n="confirmOk">蝣箄??芷</button>
+          <button type="button" id="confirmCancelButton" class="quiet-button" data-i18n="cancelEdit">取消</button>
+          <button type="button" id="confirmOkButton" class="primary-action danger-action" data-i18n="confirmOk">確認刪除</button>
         </div>
       </section>
     </div>
