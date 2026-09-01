@@ -1397,21 +1397,24 @@ const GUIDE_SCREENSHOTS = {
   student: [
     { image: "student-login.png", ratio: "1240 / 287", focus: { left: 83, top: 7, width: 15, height: 14 } },
     { image: "student-course-code.png", ratio: "421 / 161", size: "small", focus: { left: 1, top: 16, width: 98, height: 54 } },
-    { image: "student-info.png", ratio: "1214 / 65", size: "wide-small", focus: { left: 1, top: 4, width: 98, height: 88 } },
-    { image: "student-canvas.png", ratio: "1214 / 465", size: "wide-small", focus: { left: 1, top: 20, width: 98, height: 76 } },
-    { image: "student-own-posts-board.png", ratio: "1240 / 380", focus: { left: 1, top: 31, width: 98, height: 66 } },
+    { image: "student-info.png", ratio: "1214 / 72", size: "info-row", focus: null },
+    { image: "student-canvas.png", ratio: "1214 / 465", size: "wide-small", focus: null },
+    { image: "student-own-posts-board-chinese.png", ratio: "1240 / 380", focus: { left: 1, top: 31, width: 98, height: 66 } },
   ],
 };
 
 function renderGuideScreenshot(screen) {
   const config = GUIDE_SCREENSHOTS[usageGuideRole]?.[usageGuideStepIndex];
   if (!config) return false;
-  const focus = config.focus || { left: 0, top: 0, width: 100, height: 100 };
+  const focus = config.focus;
   const sizeClass = config.size ? ` is-${config.size}` : "";
+  const highlightMarkup = focus
+    ? `<span class="guide-highlight" style="left:${focus.left}%;top:${focus.top}%;width:${focus.width}%;height:${focus.height}%;"></span>`
+    : "";
   screen.innerHTML = `
     <div class="guide-screenshot-frame${sizeClass}" style="aspect-ratio:${config.ratio || "16 / 9"};">
       <img src="./guide-assets/${config.image}" alt="" loading="eager" />
-      <span class="guide-highlight" style="left:${focus.left}%;top:${focus.top}%;width:${focus.width}%;height:${focus.height}%;"></span>
+      ${highlightMarkup}
     </div>`;
   return true;
 }

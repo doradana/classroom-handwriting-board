@@ -339,6 +339,10 @@ h2 {
   width: min(100%, 720px);
 }
 
+.guide-screenshot-frame.is-info-row {
+  width: min(100%, 720px);
+}
+
 .guide-screenshot-frame img {
   display: block;
   width: 100%;
