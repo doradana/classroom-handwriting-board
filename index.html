@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>中文手寫房間公佈欄</title>
-    <link rel="stylesheet" href="./styles.css?v=20260710-grid-moves-with-ink" />
+    <link rel="stylesheet" href="./styles.css?v=20260825-board-chinese-guide" />
   </head>
   <body>
     <main class="app-shell">
@@ -179,6 +179,7 @@
 
               <div class="canvas-wrap">
                 <div class="canvas-stage">
+                  <canvas id="gridCanvas" aria-hidden="true"></canvas>
                   <canvas id="writingCanvas" data-i18n-aria-label="canvasLabel" aria-label="在這裡手寫中文"></canvas>
                   <div class="paper-lines" aria-hidden="true"></div>
                 </div>
@@ -246,6 +247,36 @@
       </section>
     </div>
 
-    <script src="./app.js?v=20260710-login-or-register"></script>
+    <button type="button" id="usageGuideButton" class="usage-guide-button" data-i18n="guideButton" aria-haspopup="dialog">使用指南</button>
+
+    <div id="usageGuideModal" class="modal-overlay guide-overlay" role="dialog" aria-modal="true" aria-labelledby="usageGuideTitle" hidden>
+      <section class="modal-card guide-modal-card">
+        <div class="usage-guide-head">
+          <span class="guide-badge">?</span>
+          <h2 id="usageGuideTitle" data-i18n="guideTitle">使用指南</h2>
+          <button type="button" id="usageGuideCloseButton" class="icon-button guide-close-button" data-i18n-aria-label="guideClose" aria-label="關閉使用指南">×</button>
+        </div>
+        <div class="guide-step-meta">
+          <span id="usageGuideRoleLabel">老師使用指南</span>
+          <span id="usageGuideProgress">1 / 5</span>
+        </div>
+        <div class="guide-animation" id="usageGuideAnimation" aria-hidden="true">
+          <div class="guide-device">
+            <div class="guide-screen"></div>
+          </div>
+        </div>
+        <article class="usage-guide-step">
+          <strong id="usageGuideStepTitle">老師登入</strong>
+          <p id="usageGuideStepText">使用老師帳號登入後，系統會保留課程資料夾和學生作品。</p>
+        </article>
+        <div class="guide-step-dots" id="usageGuideDots" aria-hidden="true"></div>
+        <div class="guide-step-actions">
+          <button type="button" id="usageGuidePrevButton" class="quiet-button" data-i18n="guidePrev">上一步</button>
+          <button type="button" id="usageGuideNextButton" class="primary-action" data-i18n="guideNext">下一步</button>
+        </div>
+      </section>
+    </div>
+
+    <script src="./app.js?v=20260825-board-chinese-guide"></script>
   </body>
 </html>

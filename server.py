@@ -9,6 +9,7 @@ import os
 import re
 import secrets
 import sys
+import threading
 import uuid
 from datetime import datetime, timezone
 
@@ -37,6 +38,7 @@ COURSE_CODE_RE = re.compile(r"^[0-9]{6}$")
 COURSE_RE = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
 USERNAME_RE = re.compile(r"^[A-Za-z0-9_.@-]{3,60}$")
 DEFAULT_COURSE_ID = "default"
+DATA_LOCK = threading.RLock()
 
 
 def ensure_data_root():
@@ -368,10 +370,14 @@ def save_room(room_code, room):
     path = room_file(room_code)
     if path is None:
         raise ValueError("Invalid room code")
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    temp_file = path.with_suffix(".tmp")
-    temp_file.write_text(json.dumps(room, ensure_ascii=False, indent=2), encoding="utf-8")
-    temp_file.replace(path)
+    with DATA_LOCK:
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        temp_file = path.with_name(f"{path.stem}.{threading.get_ident()}.{uuid.uuid4().hex}.tmp")
+        try:
+            temp_file.write_text(json.dumps(room, ensure_ascii=False, indent=2), encoding="utf-8")
+            temp_file.replace(path)
+        finally:
+            temp_file.unlink(missing_ok=True)
 
 
 def rotate_room_code(room_code):
@@ -470,6 +476,19 @@ def json_response(handler, status, payload):
     handler.wfile.write(body)
 
 
+def post_collection_version(posts):
+    if not isinstance(posts, list):
+        return "0:"
+    parts = [str(len(posts))]
+    for post in posts:
+        if not isinstance(post, dict):
+            continue
+        parts.append(str(post.get("id", "")))
+        parts.append(str(post.get("createdAt", "")))
+    raw = "|".join(parts).encode("utf-8")
+    return hashlib.sha1(raw).hexdigest()
+
+
 def room_summary(room):
     return {
         "room": room["room"],
@@ -512,6 +531,11 @@ def parse_rotate_path(path):
 
 def parse_course_posts_path(path):
     match = re.fullmatch(r"/api/rooms/([0-9]{4,8})/courses/([a-zA-Z0-9_-]{1,64})/posts", path)
+    return match.groups() if match else None
+
+
+def parse_course_posts_meta_path(path):
+    match = re.fullmatch(r"/api/rooms/([0-9]{4,8})/courses/([a-zA-Z0-9_-]{1,64})/posts/meta", path)
     return match.groups() if match else None
 
 
@@ -719,6 +743,30 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
             json_response(self, 200, {"courses": room["courses"], "activeCourseId": room["activeCourseId"]})
             return
 
+        parsed = parse_course_posts_meta_path(path)
+        if parsed:
+            room_code, course_id = parsed
+            if not room_exists(room_code):
+                json_response(self, 404, {"error": "Room not found"})
+                return
+            room = load_room(room_code)
+            if course_id not in room["postsByCourse"]:
+                json_response(self, 404, {"error": "Course not found"})
+                return
+            teacher, _room = require_room_owner(self, room_code)
+            if not teacher:
+                return
+            course_posts = room["postsByCourse"][course_id]
+            json_response(
+                self,
+                200,
+                {
+                    "version": post_collection_version(course_posts),
+                    "count": len(course_posts),
+                },
+            )
+            return
+
         parsed = parse_course_posts_path(path)
         if parsed:
             room_code, course_id = parsed
@@ -869,11 +917,6 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
             json_response(self, 400, {"error": "Invalid JSON or upload is too large"})
             return
 
-        room = load_room(room_code)
-        if course_id not in room["postsByCourse"]:
-            json_response(self, 404, {"error": "Course not found"})
-            return
-
         name = str(payload.get("name", "")).strip()[:18]
         prompt = str(payload.get("prompt", "")).strip()[:32] or "中文手寫練習"
         image = str(payload.get("image", ""))
@@ -881,19 +924,25 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
             json_response(self, 400, {"error": "Missing name or handwriting image"})
             return
 
-        room["postsByCourse"][course_id].insert(
-            0,
-            {
-                "id": str(uuid.uuid4()),
-                "name": name,
-                "prompt": prompt,
-                "image": image,
-                "courseId": course_id,
-                "createdAt": now_iso(),
-            },
-        )
-        save_room(room_code, room)
-        own_posts = [post for post in room["postsByCourse"][course_id] if str(post.get("name", "")).strip() == name]
+        with DATA_LOCK:
+            room = load_room(room_code)
+            if course_id not in room["postsByCourse"]:
+                json_response(self, 404, {"error": "Course not found"})
+                return
+
+            room["postsByCourse"][course_id].insert(
+                0,
+                {
+                    "id": str(uuid.uuid4()),
+                    "name": name,
+                    "prompt": prompt,
+                    "image": image,
+                    "courseId": course_id,
+                    "createdAt": now_iso(),
+                },
+            )
+            save_room(room_code, room)
+            own_posts = [post for post in room["postsByCourse"][course_id] if str(post.get("name", "")).strip() == name]
         json_response(self, 200, own_posts)
 
     def do_PATCH(self):
@@ -1015,6 +1064,11 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
         json_response(self, 200, [])
 
 
+class ClassroomHTTPServer(ThreadingHTTPServer):
+    daemon_threads = True
+    request_queue_size = 256
+
+
 def main():
     migrate_legacy_data()
     log_path = ROOT / "server-runtime.log"
@@ -1022,7 +1076,7 @@ def main():
     sys.stderr = sys.stdout
     host = "0.0.0.0"
     port = int(os.environ.get("PORT") or (sys.argv[1] if len(sys.argv) > 1 else 8030))
-    server = ThreadingHTTPServer((host, port), ClassroomHandler)
+    server = ClassroomHTTPServer((host, port), ClassroomHandler)
     print(f"Classroom handwriting board: http://127.0.0.1:{port}/", flush=True)
     server.serve_forever()
 

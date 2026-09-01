@@ -493,11 +493,98 @@ const TRANSLATIONS = {
   },
 };
 
+const gridCanvas = document.querySelector("#gridCanvas");
+const gridCtx = gridCanvas.getContext("2d");
 const canvas = document.querySelector("#writingCanvas");
 const ctx = canvas.getContext("2d", { willReadFrequently: true });
 const canvasWrap = document.querySelector(".canvas-wrap");
 const canvasStage = document.querySelector(".canvas-stage");
 const form = document.querySelector("#postForm");
+Object.assign(TRANSLATIONS["zh-Hans"], {
+  guideButton: "使用指南",
+  guideClose: "关闭使用指南",
+  guideTeacherRole: "老师使用指南",
+  guideStudentRole: "学生使用指南",
+  guidePrev: "上一步",
+  guideNext: "下一步",
+  guideDone: "完成",
+  guideTitle: "使用指南",
+  guideTeacherTitle: "老师登入",
+  guideTeacherText: "使用老师账号登入后，系统会保留课程资料夹和学生作品。",
+  guideCourseTitle: "建立或选择课程",
+  guideCourseText: "老师进入课程后，右侧会显示 6 位数课程密码，请提供给学生。",
+  guideStudentTitle: "学生书写送出",
+  guideStudentText: "学生选择学生身份，输入课程密码，就能书写并送出作品。",
+});
+
+Object.assign(TRANSLATIONS["zh-Hant"], {
+  guideButton: "使用指南",
+  guideClose: "關閉使用指南",
+  guideTeacherRole: "老師使用指南",
+  guideStudentRole: "學生使用指南",
+  guidePrev: "上一步",
+  guideNext: "下一步",
+  guideDone: "完成",
+  guideTitle: "使用指南",
+  guideTeacherTitle: "老師登入",
+  guideTeacherText: "使用老師帳號登入後，系統會保留課程資料夾和學生作品。",
+  guideCourseTitle: "建立或選擇課程",
+  guideCourseText: "老師進入課程後，右側會顯示 6 位數課程密碼，請提供給學生。",
+  guideStudentTitle: "學生書寫送出",
+  guideStudentText: "學生選擇學生身分，輸入課程密碼，就能書寫並送出作品。",
+});
+
+Object.assign(TRANSLATIONS.en, {
+  guideButton: "How to use",
+  guideClose: "Close guide",
+  guideTeacherRole: "Teacher guide",
+  guideStudentRole: "Student guide",
+  guidePrev: "Back",
+  guideNext: "Next",
+  guideDone: "Done",
+  guideTitle: "How to Use",
+  guideTeacherTitle: "Teacher sign-in",
+  guideTeacherText: "Sign in with a teacher account so course folders and student work stay saved.",
+  guideCourseTitle: "Create or choose a course",
+  guideCourseText: "After the teacher enters a course, the 6-digit course code appears on the right for students.",
+  guideStudentTitle: "Students write and submit",
+  guideStudentText: "Students choose Student, enter the course code, then write and submit their work.",
+});
+
+Object.assign(TRANSLATIONS.ja, {
+  guideButton: "使い方",
+  guideClose: "使い方を閉じる",
+  guideTeacherRole: "先生向けガイド",
+  guideStudentRole: "学生向けガイド",
+  guidePrev: "前へ",
+  guideNext: "次へ",
+  guideDone: "完了",
+  guideTitle: "使い方",
+  guideTeacherTitle: "先生がログイン",
+  guideTeacherText: "先生アカウントでログインすると、授業フォルダと学生の作品が保存されます。",
+  guideCourseTitle: "授業を作成または選択",
+  guideCourseText: "先生が授業に入ると、右側に学生用の6桁コードが表示されます。",
+  guideStudentTitle: "学生が書いて送信",
+  guideStudentText: "学生は学生を選び、授業コードを入力して、手書き作品を送信します。",
+});
+
+Object.assign(TRANSLATIONS.vi, {
+  guideButton: "Huong dan",
+  guideClose: "Dong huong dan",
+  guideTeacherRole: "Huong dan giao vien",
+  guideStudentRole: "Huong dan hoc sinh",
+  guidePrev: "Quay lai",
+  guideNext: "Tiep theo",
+  guideDone: "Hoan tat",
+  guideTitle: "Huong dan su dung",
+  guideTeacherTitle: "Giao vien dang nhap",
+  guideTeacherText: "Dang nhap bang tai khoan giao vien de luu thu muc lop va bai cua hoc sinh.",
+  guideCourseTitle: "Tao hoac chon khoa hoc",
+  guideCourseText: "Sau khi giao vien vao khoa hoc, ma 6 so se hien ben phai de dua cho hoc sinh.",
+  guideStudentTitle: "Hoc sinh viet va gui",
+  guideStudentText: "Hoc sinh chon Hoc sinh, nhap ma khoa hoc, roi viet va gui bai.",
+});
+
 Object.assign(TRANSLATIONS["zh-Hans"], {
   teacherNotSignedIn: "尚未登入老师账号",
   teacherSignedIn: "已登入：{name}",
@@ -978,6 +1065,17 @@ const confirmModalTitle = document.querySelector("#confirmModalTitle");
 const confirmModalMessage = document.querySelector("#confirmModalMessage");
 const confirmCancelButton = document.querySelector("#confirmCancelButton");
 const confirmOkButton = document.querySelector("#confirmOkButton");
+const usageGuideButton = document.querySelector("#usageGuideButton");
+const usageGuideModal = document.querySelector("#usageGuideModal");
+const usageGuideCloseButton = document.querySelector("#usageGuideCloseButton");
+const usageGuideRoleLabel = document.querySelector("#usageGuideRoleLabel");
+const usageGuideProgress = document.querySelector("#usageGuideProgress");
+const usageGuideAnimation = document.querySelector("#usageGuideAnimation");
+const usageGuideStepTitle = document.querySelector("#usageGuideStepTitle");
+const usageGuideStepText = document.querySelector("#usageGuideStepText");
+const usageGuideDots = document.querySelector("#usageGuideDots");
+const usageGuidePrevButton = document.querySelector("#usageGuidePrevButton");
+const usageGuideNextButton = document.querySelector("#usageGuideNextButton");
 
 let posts = [];
 let courses = [];
@@ -1009,13 +1107,141 @@ const CANVAS_WORLD_FACTOR = 3;
 const masterCanvas = document.createElement("canvas");
 const masterCtx = masterCanvas.getContext("2d", { willReadFrequently: true });
 let refreshTimer = null;
+let postsVersionTimer = null;
 let courseRefreshTimer = null;
+let postsVersion = "";
+let postsRefreshInFlight = false;
 let isBoardFullscreen = false;
 let handlingBrowserBack = false;
 let pendingConfirmResolve = null;
 let activeStrokePointerId = null;
 let touchPanState = null;
+let desktopPanState = null;
+let isSpacePanning = false;
 const activeTouchPointers = new Map();
+let usageGuideRole = "teacher";
+let usageGuideStepIndex = 0;
+
+const GUIDE_STEPS = {
+  "zh-Hant": {
+    teacher: [
+      {
+        title: "登入老師帳號",
+        text: "在登入頁選擇「老師」，輸入老師姓名、帳號和密碼。登入後，網站會保存你的課程資料夾、課程和學生作品。",
+      },
+      {
+        title: "開啟或建立課程資料夾",
+        text: "登入後會直接進入老師介面。上方的「課程資料夾」可以選擇以前的資料夾，也可以按「新增」建立新的班級或主題資料夾。",
+      },
+      {
+        title: "建立課程並取得密碼",
+        text: "在「課程名稱」輸入本次課程名稱後按新增。系統會自動產生不重複的 6 位數課程密碼，右側公佈欄上方會顯示給老師看。",
+      },
+      {
+        title: "把課程密碼給學生",
+        text: "學生只需要選擇「學生」並輸入這組課程密碼，就會進入同一個課程。學生不能建立房間，也不會看到其他課程。",
+      },
+      {
+        title: "查看與展示作品",
+        text: "學生送出後，老師右側公佈欄會即時更新。可以搜尋、排序、放大單一作品展示，也可以刪除單一作品或管理課程資料夾。",
+      },
+      {
+        title: "下次繼續上課",
+        text: "課程和作品會保存在老師帳號中。下次登入同一個老師帳號後，可以從課程資料夾開啟歷史課程。",
+      },
+    ],
+    student: [
+      {
+        title: "選擇學生身分",
+        text: "在登入頁選擇「學生」。",
+      },
+      {
+        title: "輸入課程密碼",
+        text: "向老師取得 6 位數課程密碼，輸入後按「進入課程」。輸入錯誤就不能進入。",
+      },
+      {
+        title: "填寫姓名和主題",
+        text: "進入後先填學生姓名，也可以填寫練習主題，老師會在作品卡片上看到這些資訊。",
+      },
+      {
+        title: "在畫布上書寫",
+        text: "使用畫筆、橡皮擦、粗細和縮放工具完成手寫。手機上可以一根手指書寫、兩根手指移動畫布。",
+      },
+      {
+        title: "送出並查看自己的作品",
+        text: "寫完後按「送到公佈欄」。學生只能看到自己送出的作品，老師可以在公佈欄即時看到全班作品。",
+      },
+    ],
+  },
+  "zh-Hans": {
+    teacher: [
+      { title: "登入老师账号", text: "在登入页选择「老师」，输入姓名、账号和密码。登入后，课程资料夹、课程和学生作品都会保留。" },
+      { title: "开启或建立课程资料夹", text: "登入后可在「课程资料夹」选择旧资料夹，也可以新增新的班级或主题资料夹。" },
+      { title: "建立课程并取得密码", text: "输入课程名称后按新增，系统会自动产生不重复的 6 位数课程密码，并显示在右侧公布栏上方。" },
+      { title: "把课程密码给学生", text: "学生选择「学生」并输入这组密码，就会进入同一个课程；学生不能建立课程，也不会进入其他课程。" },
+      { title: "查看与展示作品", text: "学生送出后，老师公布栏会即时更新。老师可以搜寻、排序、放大作品展示，也可以删除单一作品。" },
+      { title: "下次继续上课", text: "课程和作品会保存在老师账号中。下次登入同一账号后，可从课程资料夹开启历史课程。" },
+    ],
+    student: [
+      { title: "选择学生身份", text: "在登入页选择「学生」。" },
+      { title: "输入课程密码", text: "向老师取得 6 位数课程密码，输入后按「进入课程」。输入错误就不能进入。" },
+      { title: "填写姓名和主题", text: "进入后先填学生姓名，也可以填写练习主题，老师会看到这些资讯。" },
+      { title: "在画布上书写", text: "使用画笔、橡皮擦、粗细和缩放工具完成手写。手机上可一根手指书写、两根手指移动画布。" },
+      { title: "送出并查看自己的作品", text: "写完后按「送到公布栏」。学生只能看到自己的作品，老师会即时看到全班作品。" },
+    ],
+  },
+  en: {
+    teacher: [
+      { title: "Sign in as teacher", text: "Choose Teacher, then enter your name, account, and password. Your course folders, courses, and student work stay saved." },
+      { title: "Open or create a folder", text: "After signing in, choose an old course folder or create a new folder for a class or topic." },
+      { title: "Create a course code", text: "Enter the course name and press Add. The site creates a unique 6-digit code shown above the board." },
+      { title: "Share the code", text: "Students choose Student and enter that code to join only this course. They cannot create courses." },
+      { title: "Review student work", text: "The board updates when students submit. You can search, sort, enlarge work, and delete individual posts." },
+      { title: "Return next class", text: "Courses and work are saved to the teacher account. Sign in again to open history." },
+    ],
+    student: [
+      { title: "Choose Student", text: "Choose Student on the sign-in page." },
+      { title: "Enter the course code", text: "Get the 6-digit code from the teacher and press Enter course." },
+      { title: "Add name and topic", text: "Type your name and optionally the practice topic so the teacher can identify your work." },
+      { title: "Write on the canvas", text: "Use pen, eraser, thickness, and zoom. On phones, one finger writes and two fingers move the canvas." },
+      { title: "Submit your work", text: "Press Send to board. Students see only their own work; the teacher sees the class board." },
+    ],
+  },
+  ja: {
+    teacher: [
+      { title: "先生としてログイン", text: "先生を選び、名前・アカウント・パスワードを入力します。授業フォルダと作品が保存されます。" },
+      { title: "授業フォルダを開く", text: "ログイン後、以前のフォルダを選ぶか、新しいクラス用フォルダを作成します。" },
+      { title: "授業コードを作成", text: "授業名を入力して追加すると、6桁のコードが自動で作成され、掲示板上部に表示されます。" },
+      { title: "学生にコードを伝える", text: "学生は学生を選び、このコードで同じ授業に入ります。他の授業には入りません。" },
+      { title: "作品を確認・提示", text: "学生が送信すると掲示板が更新されます。検索、並べ替え、拡大表示、削除ができます。" },
+      { title: "次回も続ける", text: "授業と作品は先生アカウントに保存され、次回ログイン後に履歴から開けます。" },
+    ],
+    student: [
+      { title: "学生を選ぶ", text: "ログインページで学生を選びます。" },
+      { title: "授業コードを入力", text: "先生から6桁コードを受け取り、入力して授業に入ります。" },
+      { title: "名前とテーマを入力", text: "自分の名前と練習テーマを入力すると、先生が作品を確認しやすくなります。" },
+      { title: "キャンバスに書く", text: "ペン、消しゴム、太さ、拡大縮小を使います。スマホでは1本指で書き、2本指で移動します。" },
+      { title: "作品を送信", text: "掲示板に送信します。学生は自分の作品だけ、先生は全員の作品を見られます。" },
+    ],
+  },
+  vi: {
+    teacher: [
+      { title: "Dang nhap giao vien", text: "Chon Giao vien, nhap ten, tai khoan va mat khau. Thu muc lop va bai hoc sinh se duoc luu." },
+      { title: "Mo hoac tao thu muc", text: "Sau khi dang nhap, chon thu muc cu hoac tao thu muc moi cho lop hoc." },
+      { title: "Tao ma khoa hoc", text: "Nhap ten khoa hoc va bam Them. He thong tao ma 6 so rieng va hien ben tren bang." },
+      { title: "Dua ma cho hoc sinh", text: "Hoc sinh chon Hoc sinh va nhap ma nay de vao dung khoa hoc. Hoc sinh khong the tao khoa hoc." },
+      { title: "Xem va trinh chieu bai", text: "Bang cap nhat khi hoc sinh gui bai. Giao vien co the tim, sap xep, phong to va xoa bai." },
+      { title: "Dung lai lan sau", text: "Khoa hoc va bai lam duoc luu trong tai khoan giao vien, lan sau co the mo lai lich su." },
+    ],
+    student: [
+      { title: "Chon Hoc sinh", text: "Chon Hoc sinh tren trang dang nhap." },
+      { title: "Nhap ma khoa hoc", text: "Lay ma 6 so tu giao vien, nhap ma va bam vao khoa hoc." },
+      { title: "Nhap ten va chu de", text: "Nhap ten hoc sinh va chu de luyen tap de giao vien nhan ra bai." },
+      { title: "Viet tren bang", text: "Dung but, tay xoa, do day va thu phong. Tren dien thoai, mot ngon tay viet, hai ngon tay di chuyen." },
+      { title: "Gui bai", text: "Bam gui len bang. Hoc sinh chi thay bai cua minh; giao vien thay bai cua ca lop." },
+    ],
+  },
+};
 
 function t(key, values = {}) {
   const dictionary = TRANSLATIONS[currentLanguage] || TRANSLATIONS["zh-Hant"];
@@ -1032,6 +1258,21 @@ function closeConfirmDialog(result = false) {
   }
 }
 
+function openUsageGuide() {
+  if (!usageGuideModal) return;
+  usageGuideRole = selectedGuideRole();
+  usageGuideStepIndex = 0;
+  renderUsageGuideStep();
+  usageGuideModal.hidden = false;
+  usageGuideCloseButton?.focus();
+}
+
+function closeUsageGuide() {
+  if (!usageGuideModal) return;
+  usageGuideModal.hidden = true;
+  usageGuideButton?.focus();
+}
+
 function showConfirmDialog(message, options = {}) {
   if (!confirmModal || !confirmModalMessage || !confirmOkButton) {
     return Promise.resolve(window.confirm(message));
@@ -1046,6 +1287,274 @@ function showConfirmDialog(message, options = {}) {
   return new Promise((resolve) => {
     pendingConfirmResolve = resolve;
   });
+}
+
+function guideStepsForCurrentLanguage(role = usageGuideRole) {
+  const languageSteps = GUIDE_STEPS[currentLanguage] || GUIDE_STEPS["zh-Hant"];
+  return languageSteps[role] || languageSteps.teacher || GUIDE_STEPS["zh-Hant"].teacher;
+}
+
+function selectedGuideRole() {
+  const role = new FormData(roomForm).get("role");
+  return role === "student" ? "student" : "teacher";
+}
+
+function guideVisualLabels() {
+  const labels = {
+    "zh-Hans": {
+      teacher: "老师",
+      student: "学生",
+      login: "登入",
+      folder: "课程资料夹",
+      course: "课程名称",
+      add: "新增",
+      share: "分享密码",
+      board: "公布栏",
+      enlarge: "放大",
+      history: "历史课程",
+      name: "姓名",
+      topic: "主题",
+      write: "书写",
+      submit: "送出",
+    },
+    "zh-Hant": {
+      teacher: "老師",
+      student: "學生",
+      login: "登入",
+      folder: "課程資料夾",
+      course: "課程名稱",
+      add: "新增",
+      share: "分享密碼",
+      board: "公佈欄",
+      enlarge: "放大",
+      history: "歷史課程",
+      name: "姓名",
+      topic: "主題",
+      write: "書寫",
+      submit: "送出",
+    },
+    en: {
+      teacher: "Teacher",
+      student: "Student",
+      login: "Sign in",
+      folder: "Folder",
+      course: "Course",
+      add: "Add",
+      share: "Share code",
+      board: "Board",
+      enlarge: "Enlarge",
+      history: "History",
+      name: "Name",
+      topic: "Topic",
+      write: "Write",
+      submit: "Submit",
+    },
+    ja: {
+      teacher: "先生",
+      student: "学生",
+      login: "ログイン",
+      folder: "授業フォルダ",
+      course: "授業名",
+      add: "追加",
+      share: "コード共有",
+      board: "掲示板",
+      enlarge: "拡大",
+      history: "履歴",
+      name: "名前",
+      topic: "テーマ",
+      write: "書く",
+      submit: "送信",
+    },
+    vi: {
+      teacher: "Giao vien",
+      student: "Hoc sinh",
+      login: "Dang nhap",
+      folder: "Thu muc",
+      course: "Khoa hoc",
+      add: "Them",
+      share: "Chia se ma",
+      board: "Bang",
+      enlarge: "Phong to",
+      history: "Lich su",
+      name: "Ten",
+      topic: "Chu de",
+      write: "Viet",
+      submit: "Gui",
+    },
+  };
+  return labels[currentLanguage] || labels["zh-Hant"];
+}
+
+const GUIDE_SCREENSHOTS = {
+  teacher: [
+    { image: "teacher-login.png", ratio: "1240 / 351", focus: { left: 65, top: 5, width: 33, height: 80 } },
+    { image: "teacher-course-controls.png", ratio: "802 / 198", focus: { left: 3, top: 15, width: 61, height: 32 } },
+    { image: "teacher-course-controls.png", ratio: "802 / 198", focus: { left: 30, top: 61, width: 66, height: 32 } },
+    { image: "teacher-course-code-top.png", ratio: "399 / 150", focus: { left: 73, top: 1, width: 25, height: 40 } },
+    { image: "teacher-board-chinese.png", ratio: "1360 / 760", focus: { left: 1, top: 17, width: 97, height: 20 } },
+    { image: "teacher-course-controls.png", ratio: "802 / 198", focus: { left: 3, top: 15, width: 93, height: 80 } },
+  ],
+  student: [
+    { image: "student-login.png", ratio: "1240 / 287", focus: { left: 83, top: 7, width: 15, height: 14 } },
+    { image: "student-course-code.png", ratio: "421 / 161", size: "small", focus: { left: 1, top: 16, width: 98, height: 54 } },
+    { image: "student-info.png", ratio: "1214 / 65", size: "wide-small", focus: { left: 1, top: 4, width: 98, height: 88 } },
+    { image: "student-canvas.png", ratio: "1214 / 465", size: "wide-small", focus: { left: 1, top: 20, width: 98, height: 76 } },
+    { image: "student-own-posts-board.png", ratio: "1240 / 380", focus: { left: 1, top: 31, width: 98, height: 66 } },
+  ],
+};
+
+function renderGuideScreenshot(screen) {
+  const config = GUIDE_SCREENSHOTS[usageGuideRole]?.[usageGuideStepIndex];
+  if (!config) return false;
+  const focus = config.focus || { left: 0, top: 0, width: 100, height: 100 };
+  const sizeClass = config.size ? ` is-${config.size}` : "";
+  screen.innerHTML = `
+    <div class="guide-screenshot-frame${sizeClass}" style="aspect-ratio:${config.ratio || "16 / 9"};">
+      <img src="./guide-assets/${config.image}" alt="" loading="eager" />
+      <span class="guide-highlight" style="left:${focus.left}%;top:${focus.top}%;width:${focus.width}%;height:${focus.height}%;"></span>
+    </div>`;
+  return true;
+}
+
+function renderGuideAnimation() {
+  const screen = usageGuideAnimation?.querySelector(".guide-screen");
+  if (!screen) return;
+  if (renderGuideScreenshot(screen)) return;
+  const labels = guideVisualLabels();
+  const step = usageGuideStepIndex + 1;
+  let visual = "";
+  if (usageGuideRole === "teacher") {
+    if (step === 1) {
+      visual = `
+        <div class="guide-scene">
+          <span class="guide-pill teacher">${labels.teacher}</span>
+          <span class="guide-input">${labels.name}</span>
+          <span class="guide-button-mini">${labels.login}</span>
+        </div>`;
+    } else if (step === 2) {
+      visual = `
+        <div class="guide-scene">
+          <span class="guide-folder"><span>${labels.folder}</span></span>
+          <span class="guide-input">${labels.folder}</span>
+          <span class="guide-button-mini">${labels.add}</span>
+          <span class="guide-history-row">${labels.history}</span>
+        </div>`;
+    } else if (step === 3) {
+      visual = `
+        <div class="guide-scene">
+          <span class="guide-input">${labels.course}</span>
+          <span class="guide-button-mini">${labels.add}</span>
+          <span class="guide-code">410392</span>
+        </div>`;
+    } else if (step === 4) {
+      visual = `
+        <div class="guide-scene">
+          <span class="guide-pill teacher">${labels.teacher}</span>
+          <span class="guide-share-arrow"></span>
+          <span class="guide-pill student">${labels.student}</span>
+          <span class="guide-code">${labels.share} 410392</span>
+        </div>`;
+    } else if (step === 5) {
+      visual = `
+        <div class="guide-scene">
+          <span class="guide-board-card" data-name="${labels.student}"></span>
+          <span class="guide-post-mini"></span>
+          <span class="guide-button-mini guide-submit">${labels.enlarge}</span>
+          <span class="guide-code">${labels.board}</span>
+        </div>`;
+    } else {
+      visual = `
+        <div class="guide-scene">
+          <span class="guide-folder"><span>${labels.folder}</span></span>
+          <span class="guide-history-row">${labels.history}</span>
+          <span class="guide-card"></span>
+        </div>`;
+    }
+  } else if (step === 1) {
+    visual = `
+      <div class="guide-scene">
+        <span class="guide-pill student">${labels.student}</span>
+        <span class="guide-code">${labels.student}</span>
+      </div>`;
+  } else if (step === 2) {
+    visual = `
+      <div class="guide-scene">
+        <span class="guide-code">410392</span>
+        <span class="guide-button-mini">${labels.login}</span>
+      </div>`;
+  } else if (step === 3) {
+    visual = `
+      <div class="guide-scene">
+        <span class="guide-input">${labels.name}</span>
+        <span class="guide-history-row">${labels.topic}</span>
+      </div>`;
+  } else if (step === 4) {
+    visual = `
+      <div class="guide-scene">
+        <span class="guide-canvas-mini"><span class="guide-ink"></span></span>
+      </div>`;
+  } else {
+    visual = `
+      <div class="guide-scene">
+        <span class="guide-canvas-mini"><span class="guide-ink"></span></span>
+        <span class="guide-button-mini guide-submit">${labels.submit}</span>
+        <span class="guide-post-mini guide-submit-card"></span>
+      </div>`;
+  }
+  screen.innerHTML = visual;
+}
+
+function restartGuideAnimation() {
+  if (!usageGuideAnimation) return;
+  usageGuideAnimation.classList.add("is-changing");
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      usageGuideAnimation.classList.remove("is-changing");
+    });
+  });
+}
+
+function renderUsageGuideStep() {
+  const steps = guideStepsForCurrentLanguage();
+  if (!steps.length) return;
+  usageGuideStepIndex = Math.max(0, Math.min(usageGuideStepIndex, steps.length - 1));
+  const step = steps[usageGuideStepIndex];
+  if (usageGuideRoleLabel) usageGuideRoleLabel.textContent = t(usageGuideRole === "student" ? "guideStudentRole" : "guideTeacherRole");
+  if (usageGuideProgress) usageGuideProgress.textContent = `${usageGuideStepIndex + 1} / ${steps.length}`;
+  if (usageGuideStepTitle) usageGuideStepTitle.textContent = step.title;
+  if (usageGuideStepText) usageGuideStepText.textContent = step.text;
+  if (usageGuidePrevButton) usageGuidePrevButton.disabled = usageGuideStepIndex === 0;
+  if (usageGuideNextButton) usageGuideNextButton.textContent = usageGuideStepIndex === steps.length - 1 ? t("guideDone") : t("guideNext");
+  if (usageGuideAnimation) {
+    usageGuideAnimation.dataset.role = usageGuideRole;
+    usageGuideAnimation.dataset.step = String(usageGuideStepIndex + 1);
+    renderGuideAnimation();
+  }
+  if (usageGuideDots) {
+    usageGuideDots.replaceChildren();
+    steps.forEach((_, index) => {
+      const dot = document.createElement("span");
+      dot.className = index === usageGuideStepIndex ? "is-active" : "";
+      usageGuideDots.append(dot);
+    });
+  }
+  restartGuideAnimation();
+}
+
+function showPreviousGuideStep() {
+  if (usageGuideStepIndex <= 0) return;
+  usageGuideStepIndex -= 1;
+  renderUsageGuideStep();
+}
+
+function showNextGuideStep() {
+  const steps = guideStepsForCurrentLanguage();
+  if (usageGuideStepIndex >= steps.length - 1) {
+    closeUsageGuide();
+    return;
+  }
+  usageGuideStepIndex += 1;
+  renderUsageGuideStep();
 }
 
 function endCourseLabel() {
@@ -1152,6 +1661,7 @@ function applyLanguage(language) {
   updateTeacherStatus();
   updateBoardFullscreenUi();
   updateEndCourseButton();
+  if (usageGuideModal && !usageGuideModal.hidden) renderUsageGuideStep();
   renderCourses();
   setRoomUi();
   renderBoard();
@@ -1548,6 +2058,10 @@ function coursePostsPath(courseId = activeCourseId) {
   return basePath;
 }
 
+function coursePostsMetaPath(courseId = activeCourseId) {
+  return `/api/rooms/${encodeURIComponent(activeRoom)}/courses/${encodeURIComponent(courseId)}/posts/meta`;
+}
+
 function singlePostPath(postId, courseId = activeCourseId) {
   return `${coursePostsPath(courseId)}/${encodeURIComponent(postId)}`;
 }
@@ -1591,9 +2105,11 @@ function leaveCurrentRoomForHistory() {
   activeRoom = "";
   activeRoomName = "";
   posts = [];
+  postsVersion = "";
   courses = [{ id: "default", name: t("defaultCourse") }];
   activeCourseId = "default";
   if (refreshTimer) window.clearInterval(refreshTimer);
+  if (postsVersionTimer) window.clearInterval(postsVersionTimer);
   if (courseRefreshTimer) window.clearInterval(courseRefreshTimer);
   localStorage.removeItem(STORAGE_KEY);
   renderCourses();
@@ -1654,6 +2170,8 @@ function setRoomUi() {
   joinPanel.hidden = inRoom;
   teacherDashboard.hidden = true;
   classroomLayout.hidden = !inRoom;
+  if (usageGuideButton) usageGuideButton.hidden = inRoom;
+  if (inRoom) closeUsageGuide();
   classroomLayout.classList.toggle("student-writing-only", inRoom && activeRole === "student");
   boardPanel.hidden = !inRoom;
   if (leaveRoomButton) leaveRoomButton.hidden = !inRoom;
@@ -1834,8 +2352,10 @@ async function restoreSavedRoom() {
 
 function startTimers() {
   if (refreshTimer) window.clearInterval(refreshTimer);
+  if (postsVersionTimer) window.clearInterval(postsVersionTimer);
   if (courseRefreshTimer) window.clearInterval(courseRefreshTimer);
-  refreshTimer = window.setInterval(() => refreshPosts({ quiet: true }), 2000);
+  refreshTimer = window.setInterval(() => refreshPosts({ quiet: true }), 15000);
+  postsVersionTimer = window.setInterval(() => checkPostUpdates(), 800);
   courseRefreshTimer = window.setInterval(() => refreshCourses({ quiet: true }), 4000);
 }
 
@@ -1855,6 +2375,24 @@ async function refreshCourses({ quiet = false } = {}) {
   }
 }
 
+function localPostsVersion(list = posts) {
+  return list
+    .map((post) => `${post.id || ""}:${post.createdAt || ""}`)
+    .join("|");
+}
+
+async function checkPostUpdates() {
+  if (!activeRoom || !useServer || !activeCourseId || activeRole !== "teacher" || postsRefreshInFlight) return;
+  try {
+    const meta = await apiRequest(coursePostsMetaPath(), { headers: authHeaders() });
+    if (meta.version && meta.version !== postsVersion) {
+      await refreshPosts({ quiet: true, knownVersion: meta.version });
+    }
+  } catch {
+    await refreshPosts({ quiet: true });
+  }
+}
+
 async function createCourse(name) {
   if (!activeRoom || activeRole !== "teacher") return;
   const courseName = name.trim();
@@ -1871,6 +2409,7 @@ async function createCourse(name) {
     courses = data.courses;
     activeCourseId = data.activeCourseId;
     posts = [];
+    postsVersion = "";
     courseNameInput.value = "";
     if (courseCodeInput) courseCodeInput.value = "";
     renderCourses();
@@ -2015,9 +2554,11 @@ async function deleteRoom(roomCode = activeRoom, options = {}) {
       activeRoom = "";
       activeRoomName = "";
       posts = [];
+      postsVersion = "";
       courses = [];
       activeCourseId = "default";
       if (refreshTimer) window.clearInterval(refreshTimer);
+      if (postsVersionTimer) window.clearInterval(postsVersionTimer);
       if (courseRefreshTimer) window.clearInterval(courseRefreshTimer);
       localStorage.removeItem(STORAGE_KEY);
     }
@@ -2057,22 +2598,28 @@ function renderCourses() {
   setRoomUi();
 }
 
-async function refreshPosts({ quiet = false } = {}) {
+async function refreshPosts({ quiet = false, knownVersion = "" } = {}) {
   if (!activeRoom || !useServer || !activeCourseId) return;
+  if (postsRefreshInFlight) return;
   if (activeRole === "student" && !studentName.value.trim()) {
     posts = [];
+    postsVersion = "";
     renderBoard();
     return;
   }
+  postsRefreshInFlight = true;
   try {
     posts = await apiRequest(coursePostsPath(), {
       headers: activeRole === "teacher" ? authHeaders() : {},
     });
+    postsVersion = knownVersion || localPostsVersion(posts);
     renderBoard();
   } catch {
     useServer = false;
     if (!quiet) helperText.textContent = t("serverMissing");
     renderBoard();
+  } finally {
+    postsRefreshInFlight = false;
   }
 }
 
@@ -2123,6 +2670,54 @@ function renderCanvasFromMaster() {
   ctx.lineJoin = "round";
 }
 
+function cssColor(name, fallback) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+}
+
+function renderGridCanvas(displayWidth, displayHeight, scaleValue = currentCanvasScale()) {
+  const pixelScale = window.devicePixelRatio || 1;
+  const width = Math.max(1, Math.floor(displayWidth * pixelScale));
+  const height = Math.max(1, Math.floor(displayHeight * pixelScale));
+  if (gridCanvas.width !== width) gridCanvas.width = width;
+  if (gridCanvas.height !== height) gridCanvas.height = height;
+
+  gridCtx.save();
+  gridCtx.setTransform(1, 0, 0, 1, 0, 0);
+  gridCtx.clearRect(0, 0, gridCanvas.width, gridCanvas.height);
+  gridCtx.scale(pixelScale, pixelScale);
+
+  const small = Math.max(8, 40 * scaleValue / 100);
+  const large = Math.max(16, 80 * scaleValue / 100);
+  const fineLine = cssColor("--line", "rgba(242, 119, 168, 0.16)");
+  const strongLine = "rgba(242, 119, 168, 0.24)";
+
+  gridCtx.lineWidth = 1;
+  gridCtx.strokeStyle = fineLine;
+  gridCtx.beginPath();
+  for (let x = 0; x <= displayWidth; x += small) {
+    gridCtx.moveTo(x + 0.5, 0);
+    gridCtx.lineTo(x + 0.5, displayHeight);
+  }
+  for (let y = 0; y <= displayHeight; y += small) {
+    gridCtx.moveTo(0, y + 0.5);
+    gridCtx.lineTo(displayWidth, y + 0.5);
+  }
+  gridCtx.stroke();
+
+  gridCtx.strokeStyle = strongLine;
+  gridCtx.beginPath();
+  for (let x = 0; x <= displayWidth; x += large) {
+    gridCtx.moveTo(x + 0.5, 0);
+    gridCtx.lineTo(x + 0.5, displayHeight);
+  }
+  for (let y = 0; y <= displayHeight; y += large) {
+    gridCtx.moveTo(0, y + 0.5);
+    gridCtx.lineTo(displayWidth, y + 0.5);
+  }
+  gridCtx.stroke();
+  gridCtx.restore();
+}
+
 function currentCanvasScale() {
   return canvasScalePercent;
 }
@@ -2156,6 +2751,7 @@ function applyCanvasZoom(scale = currentCanvasScale(), options = {}) {
   canvasWrap.style.setProperty("--canvas-scroll-height", `${displayHeight}px`);
   canvasWrap.style.setProperty("--grid-large", `${80 * scaleValue / 100}px`);
   canvasWrap.style.setProperty("--grid-small", `${40 * scaleValue / 100}px`);
+  renderGridCanvas(displayWidth, displayHeight, scaleValue);
   renderCanvasFromMaster();
   if (options.center) centerCanvasViewport();
 }
@@ -2307,6 +2903,54 @@ function updateTouchCanvasPan(event) {
   return true;
 }
 
+function shouldStartDesktopCanvasPan(event) {
+  if (isTouchPointer(event)) return false;
+  return event.button === 1 || (event.button === 0 && isSpacePanning);
+}
+
+function startDesktopCanvasPan(event) {
+  if (!shouldStartDesktopCanvasPan(event)) return false;
+  cancelActiveStroke();
+  event.preventDefault();
+  desktopPanState = {
+    pointerId: event.pointerId,
+    x: event.clientX,
+    y: event.clientY,
+    scrollLeft: canvasWrap.scrollLeft,
+    scrollTop: canvasWrap.scrollTop,
+  };
+  canvas.classList.add("is-panning");
+  try {
+    canvas.setPointerCapture(event.pointerId);
+  } catch {
+    // Pointer capture is not required for scrolling the canvas stage.
+  }
+  return true;
+}
+
+function updateDesktopCanvasPan(event) {
+  if (!desktopPanState || event.pointerId !== desktopPanState.pointerId) return false;
+  event.preventDefault();
+  canvasWrap.scrollLeft = desktopPanState.scrollLeft - (event.clientX - desktopPanState.x);
+  canvasWrap.scrollTop = desktopPanState.scrollTop - (event.clientY - desktopPanState.y);
+  return true;
+}
+
+function stopDesktopCanvasPan(event = {}) {
+  if (!desktopPanState) return false;
+  const pointerId = desktopPanState.pointerId;
+  desktopPanState = null;
+  canvas.classList.remove("is-panning");
+  if (event.pointerId !== undefined || pointerId !== undefined) {
+    try {
+      canvas.releasePointerCapture(event.pointerId ?? pointerId);
+    } catch {
+      // Some browsers release capture automatically.
+    }
+  }
+  return true;
+}
+
 function pointerPoint(event) {
   const rect = canvasStage.getBoundingClientRect();
   const zoom = currentCanvasScale() / 100;
@@ -2368,6 +3012,7 @@ function beginStroke(event) {
   if (!activeRoom) return;
   rememberTouchPointer(event);
   if (startTouchCanvasPan(event)) return;
+  if (startDesktopCanvasPan(event)) return;
   event.preventDefault();
   canvas.setPointerCapture(event.pointerId);
   pushUndoState();
@@ -2397,6 +3042,7 @@ function continueStroke(event) {
     });
     if (updateTouchCanvasPan(event)) return;
   }
+  if (updateDesktopCanvasPan(event)) return;
   if (!drawing || !lastPoint) return;
   if (activeStrokePointerId !== null && event.pointerId !== activeStrokePointerId) return;
   event.preventDefault();
@@ -2413,6 +3059,7 @@ function endStroke(event) {
   if (isTouchPointer(event)) {
     forgetTouchPointer(event);
   }
+  if (stopDesktopCanvasPan(event)) return;
   if (activeStrokePointerId !== null && event?.pointerId !== undefined && event.pointerId !== activeStrokePointerId) return;
   if (!drawing) return;
   if (event?.clientX !== undefined && event?.clientY !== undefined && lastPoint) {
@@ -2728,6 +3375,9 @@ canvas.addEventListener("pointermove", continueStroke);
 canvas.addEventListener("pointerup", endStroke);
 canvas.addEventListener("pointercancel", endStroke);
 canvas.addEventListener("pointerleave", endStroke);
+canvas.addEventListener("contextmenu", (event) => {
+  if (desktopPanState) event.preventDefault();
+});
 
 document.querySelectorAll("[data-mode]").forEach((button) => {
   button.addEventListener("click", () => setMode(button.dataset.mode));
@@ -2758,6 +3408,13 @@ confirmCancelButton.addEventListener("click", () => closeConfirmDialog(false));
 confirmOkButton.addEventListener("click", () => closeConfirmDialog(true));
 confirmModal.addEventListener("click", (event) => {
   if (event.target === confirmModal) closeConfirmDialog(false);
+});
+usageGuideButton?.addEventListener("click", openUsageGuide);
+usageGuideCloseButton?.addEventListener("click", closeUsageGuide);
+usageGuidePrevButton?.addEventListener("click", showPreviousGuideStep);
+usageGuideNextButton?.addEventListener("click", showNextGuideStep);
+usageGuideModal?.addEventListener("click", (event) => {
+  if (event.target === usageGuideModal) closeUsageGuide();
 });
 endCourseButton.addEventListener("click", endCourseAndRotatePassword);
 deleteRoomButton.addEventListener("click", () => deleteRoom(activeRoom));
@@ -2791,6 +3448,16 @@ window.addEventListener("popstate", (event) => {
 });
 
 window.addEventListener("keydown", (event) => {
+  if (event.code === "Space" && activeRoom) {
+    const activeTag = document.activeElement?.tagName;
+    const isTyping = activeTag === "INPUT" || activeTag === "TEXTAREA" || document.activeElement?.isContentEditable;
+    if (!isTyping) {
+      isSpacePanning = true;
+      canvas.classList.add("can-pan");
+      event.preventDefault();
+      return;
+    }
+  }
   if (event.key === "Escape" && confirmModal && !confirmModal.hidden) {
     closeConfirmDialog(false);
     return;
@@ -2799,9 +3466,19 @@ window.addEventListener("keydown", (event) => {
     closeRoomNameModal();
     return;
   }
+  if (event.key === "Escape" && usageGuideModal && !usageGuideModal.hidden) {
+    closeUsageGuide();
+    return;
+  }
   if (event.key === "Escape" && isBoardFullscreen) {
     setBoardFullscreen(false);
   }
+});
+
+window.addEventListener("keyup", (event) => {
+  if (event.code !== "Space") return;
+  isSpacePanning = false;
+  canvas.classList.remove("can-pan");
 });
 
 const savedTeacher = loadTeacherProfile();
