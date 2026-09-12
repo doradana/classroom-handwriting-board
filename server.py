@@ -2,8 +2,10 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote_plus, urlparse
 import base64
+import binascii
 import hashlib
 import hmac
+from http.cookies import SimpleCookie
 import json
 import os
 import re
@@ -11,7 +13,7 @@ import secrets
 import sys
 import threading
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 
 ROOT = Path(__file__).resolve().parent
@@ -33,10 +35,14 @@ TEACHERS_FILE = DATA_ROOT / "teachers.json"
 SESSION_SECRET_FILE = DATA_ROOT / "session-secret.txt"
 LEGACY_DATA_ROOT = ROOT / "data"
 MAX_BODY_BYTES = 4 * 1024 * 1024
+MAX_IMAGE_DATA_URL_BYTES = 3 * 1024 * 1024
+SESSION_MAX_AGE = timedelta(days=14)
+CSRF_COOKIE_NAME = "classroom_csrf"
 ROOM_RE = re.compile(r"^[0-9]{4,8}$")
 COURSE_CODE_RE = re.compile(r"^[0-9]{6}$")
 COURSE_RE = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
 USERNAME_RE = re.compile(r"^[A-Za-z0-9_.@-]{3,60}$")
+CONTROL_CHARS_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 DEFAULT_COURSE_ID = "default"
 DATA_LOCK = threading.RLock()
 
@@ -79,6 +85,18 @@ def now_iso():
     return datetime.now(timezone.utc).isoformat()
 
 
+def parse_iso(value):
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+
+
+def clean_text(value, max_length, fallback=""):
+    text = CONTROL_CHARS_RE.sub("", str(value or "")).strip()
+    return text[:max_length] or fallback
+
+
 def load_teachers():
     try:
         data = json.loads(TEACHERS_FILE.read_text(encoding="utf-8"))
@@ -115,7 +133,6 @@ def password_hash(password, salt=None):
 
 def public_teacher(teacher):
     return {
-        "id": teacher.get("id", ""),
         "name": teacher.get("name", ""),
         "username": teacher.get("username", ""),
     }
@@ -131,7 +148,7 @@ def find_teacher(username):
 
 def create_teacher(payload):
     username = str(payload.get("username", "")).strip().lower()
-    name = str(payload.get("name", "")).strip()[:40]
+    name = clean_text(payload.get("name"), 40)
     password = str(payload.get("password", ""))
     if not USERNAME_RE.match(username):
         return None, "Username must be 3 to 60 letters, numbers, or email symbols"
@@ -148,6 +165,7 @@ def create_teacher(payload):
         "salt": salt,
         "passwordHash": digest,
         "createdAt": now_iso(),
+        "passwordUpdatedAt": now_iso(),
     }
     data["teachers"].append(teacher)
     save_teachers(data)
@@ -165,34 +183,37 @@ def login_teacher(payload):
     return teacher, None
 
 
-def reset_teacher_password(payload):
-    username = str(payload.get("username", "")).strip().lower()
-    name = str(payload.get("name", "")).strip()
+def reset_teacher_password(teacher, payload):
     password = str(payload.get("password", ""))
-    if not USERNAME_RE.match(username) or len(password) < 6:
+    if len(password) < 6:
         return None, "Invalid reset request"
     data = load_teachers()
-    teacher = None
+    target = None
     for item in data["teachers"]:
-        if str(item.get("username", "")).lower() == username:
-            teacher = item
+        if item.get("id") == teacher.get("id"):
+            target = item
             break
-    if not teacher:
+    if not target:
         return None, "Invalid reset request"
+    name = clean_text(payload.get("name"), 40)
     if name:
-        teacher["name"] = name[:40]
+        target["name"] = name
     salt, digest = password_hash(password)
-    teacher["salt"] = salt
-    teacher["passwordHash"] = digest
-    teacher["passwordUpdatedAt"] = now_iso()
+    target["salt"] = salt
+    target["passwordHash"] = digest
+    target["passwordUpdatedAt"] = now_iso()
     save_teachers(data)
-    return teacher, None
+    return target, None
 
 
 def issue_session(teacher):
     teacher_id = teacher["id"]
-    signature = hmac.new(session_secret().encode("utf-8"), teacher_id.encode("utf-8"), hashlib.sha256).hexdigest()
-    raw = f"{teacher_id}.{signature}".encode("utf-8")
+    issued_at = str(int(datetime.now(timezone.utc).timestamp()))
+    password_marker = str(teacher.get("passwordUpdatedAt") or teacher.get("createdAt") or "")
+    password_marker_hash = hashlib.sha256(password_marker.encode("utf-8")).hexdigest()
+    signed = f"{teacher_id}.{issued_at}.{password_marker_hash}"
+    signature = hmac.new(session_secret().encode("utf-8"), signed.encode("utf-8"), hashlib.sha256).hexdigest()
+    raw = f"{signed}.{signature}".encode("utf-8")
     return base64.urlsafe_b64encode(raw).decode("utf-8").rstrip("=")
 
 
@@ -206,14 +227,29 @@ def current_teacher(handler):
     try:
         padded = token + "=" * (-len(token) % 4)
         raw = base64.urlsafe_b64decode(padded.encode("utf-8")).decode("utf-8")
-        teacher_id, signature = raw.split(".", 1)
+        parts = raw.split(".")
     except (ValueError, UnicodeDecodeError):
         return None
-    expected = hmac.new(session_secret().encode("utf-8"), teacher_id.encode("utf-8"), hashlib.sha256).hexdigest()
+    if len(parts) == 4:
+        teacher_id, issued_at, password_marker_hash, signature = parts
+        signed = f"{teacher_id}.{issued_at}.{password_marker_hash}"
+        try:
+            issued_dt = datetime.fromtimestamp(int(issued_at), tz=timezone.utc)
+        except (TypeError, ValueError, OSError):
+            return None
+        if datetime.now(timezone.utc) - issued_dt > SESSION_MAX_AGE:
+            return None
+    else:
+            return None
+    expected = hmac.new(session_secret().encode("utf-8"), signed.encode("utf-8"), hashlib.sha256).hexdigest()
     if not hmac.compare_digest(signature, expected):
         return None
     for teacher in load_teachers()["teachers"]:
         if teacher.get("id") == teacher_id:
+            current_marker = str(teacher.get("passwordUpdatedAt") or teacher.get("createdAt") or "")
+            current_marker_hash = hashlib.sha256(current_marker.encode("utf-8")).hexdigest()
+            if not hmac.compare_digest(password_marker_hash, current_marker_hash):
+                return None
             return teacher
     return None
 
@@ -315,8 +351,7 @@ def normalize_room(room_code, data):
         room["activeCourseId"] = clean_courses[0]["id"]
 
     for course_id, posts in list(room["postsByCourse"].items()):
-        if not isinstance(posts, list):
-            room["postsByCourse"][course_id] = []
+        room["postsByCourse"][course_id] = sanitize_posts(posts)
 
     return room
 
@@ -435,14 +470,13 @@ def sanitize_teacher(value):
     if not isinstance(value, dict):
         return {}
     return {
-        "name": str(value.get("name", "")).strip()[:40],
-        "email": str(value.get("email", "")).strip()[:80],
-        "picture": str(value.get("picture", "")).strip()[:300],
+        "name": clean_text(value.get("name"), 40),
+        "username": clean_text(value.get("username"), 60),
     }
 
 
 def sanitize_course_name(value):
-    return str(value or "").strip()[:40] or "未命名課程"
+    return clean_text(value, 40, "未命名課程")
 
 
 def sanitize_course_code(value):
@@ -451,11 +485,56 @@ def sanitize_course_code(value):
 
 
 def sanitize_room_name(value):
-    return str(value or "").strip()[:32]
+    return clean_text(value, 32)
+
+
+def sanitize_post(post):
+    if not isinstance(post, dict):
+        return None
+    image = str(post.get("image", ""))
+    if not valid_png_data_url(image):
+        image = ""
+    return {
+        "id": clean_text(post.get("id"), 80) or uuid.uuid4().hex,
+        "name": clean_text(post.get("name"), 18),
+        "prompt": clean_text(post.get("prompt"), 32, "中文手寫練習"),
+        "image": image,
+        "courseId": clean_text(post.get("courseId"), 64),
+        "createdAt": clean_text(post.get("createdAt"), 40, now_iso()),
+    }
+
+
+def sanitize_posts(posts):
+    clean = []
+    if not isinstance(posts, list):
+        return clean
+    for post in posts:
+        clean_post = sanitize_post(post)
+        if clean_post and clean_post["name"] and clean_post["image"]:
+            clean.append(clean_post)
+    return clean
+
+
+def valid_png_data_url(value):
+    if not isinstance(value, str) or not value.startswith("data:image/png;base64,"):
+        return False
+    if len(value.encode("utf-8")) > MAX_IMAGE_DATA_URL_BYTES:
+        return False
+    encoded = value.split(",", 1)[1]
+    if not re.fullmatch(r"[A-Za-z0-9+/=\s]+", encoded):
+        return False
+    try:
+        raw = base64.b64decode(encoded, validate=True)
+    except (ValueError, binascii.Error):
+        return False
+    return raw.startswith(b"\x89PNG\r\n\x1a\n")
 
 
 def read_json(handler):
-    content_length = int(handler.headers.get("Content-Length", "0"))
+    try:
+        content_length = int(handler.headers.get("Content-Length", "0"))
+    except (TypeError, ValueError):
+        return None
     if content_length <= 0:
         return {}
     if content_length > MAX_BODY_BYTES:
@@ -476,6 +555,72 @@ def json_response(handler, status, payload):
     handler.wfile.write(body)
 
 
+def csrf_token():
+    return secrets.token_urlsafe(32)
+
+
+def request_cookie(handler, name):
+    raw_cookie = handler.headers.get("Cookie", "")
+    if not raw_cookie:
+        return ""
+    cookie = SimpleCookie()
+    try:
+        cookie.load(raw_cookie)
+    except Exception:
+        return ""
+    morsel = cookie.get(name)
+    return morsel.value if morsel else ""
+
+
+def should_mark_secure_cookie(handler):
+    forwarded_proto = handler.headers.get("X-Forwarded-Proto", "").lower()
+    return forwarded_proto == "https"
+
+
+def csrf_cookie_header(handler, token):
+    parts = [
+        f"{CSRF_COOKIE_NAME}={token}",
+        "Path=/",
+        f"Max-Age={int(SESSION_MAX_AGE.total_seconds())}",
+        "HttpOnly",
+        "SameSite=Strict",
+    ]
+    if should_mark_secure_cookie(handler):
+        parts.append("Secure")
+    return "; ".join(parts)
+
+
+def json_response_with_csrf(handler, status, payload):
+    token = csrf_token()
+    response_payload = dict(payload)
+    response_payload["csrfToken"] = token
+    body = json.dumps(response_payload, ensure_ascii=False).encode("utf-8")
+    handler.send_response(status)
+    handler.send_header("Content-Type", "application/json; charset=utf-8")
+    handler.send_header("Cache-Control", "no-store")
+    handler.send_header("Set-Cookie", csrf_cookie_header(handler, token))
+    handler.send_header("Content-Length", str(len(body)))
+    handler.end_headers()
+    handler.wfile.write(body)
+
+
+def csrf_exempt_path(path):
+    return path in {"/api/teacher/register", "/api/teacher/login", "/api/csrf"}
+
+
+def validate_csrf(handler, path):
+    if handler.command not in {"POST", "PATCH", "DELETE"}:
+        return True
+    if csrf_exempt_path(path):
+        return True
+    cookie_token = request_cookie(handler, CSRF_COOKIE_NAME)
+    header_token = handler.headers.get("X-CSRF-Token", "").strip()
+    if not cookie_token or not header_token or not hmac.compare_digest(cookie_token, header_token):
+        json_response(handler, 403, {"error": "CSRF token mismatch"})
+        return False
+    return True
+
+
 def post_collection_version(posts):
     if not isinstance(posts, list):
         return "0:"
@@ -489,14 +634,28 @@ def post_collection_version(posts):
     return hashlib.sha1(raw).hexdigest()
 
 
-def room_summary(room):
+def public_course(course, include_code=False):
+    clean = {
+        "id": clean_text(course.get("id"), 64),
+        "name": sanitize_course_name(course.get("name")),
+        "createdAt": clean_text(course.get("createdAt"), 40),
+    }
+    if include_code:
+        clean["code"] = sanitize_course_code(course.get("code"))
+    return clean
+
+
+def room_summary(room, include_codes=False, include_teacher=False, course_id=None):
+    courses = room.get("courses", [])
+    if course_id:
+        courses = [course for course in courses if course.get("id") == course_id]
     return {
         "room": room["room"],
         "name": room.get("name", ""),
         "exists": True,
-        "teacher": room.get("teacher", {}),
-        "courses": room.get("courses", []),
-        "activeCourseId": room.get("activeCourseId", DEFAULT_COURSE_ID),
+        "teacher": room.get("teacher", {}) if include_teacher else {},
+        "courses": [public_course(course, include_codes) for course in courses],
+        "activeCourseId": course_id or room.get("activeCourseId", DEFAULT_COURSE_ID),
     }
 
 
@@ -668,6 +827,54 @@ def require_room_owner(handler, room_code):
     return teacher, room
 
 
+def course_matches_code(room, course_id, course_code):
+    course_code = sanitize_course_code(course_code)
+    if not course_code:
+        return False
+    for course in room.get("courses", []):
+        if course.get("id") == course_id and sanitize_course_code(course.get("code")) == course_code:
+            return True
+    return False
+
+
+def request_course_code(handler, payload=None, query=None):
+    if payload and isinstance(payload, dict):
+        code = sanitize_course_code(payload.get("courseCode"))
+        if code:
+            return code
+    if query is not None:
+        code = sanitize_course_code(parse_qs(query).get("courseCode", [""])[0])
+        if code:
+            return code
+    return sanitize_course_code(handler.headers.get("X-Course-Code", ""))
+
+
+def is_allowed_origin(handler):
+    origin = handler.headers.get("Origin", "")
+    if not origin:
+        return ""
+    try:
+        origin_host = urlparse(origin).netloc
+    except ValueError:
+        return ""
+    request_host = handler.headers.get("Host", "")
+    return origin if origin_host and request_host and origin_host == request_host else ""
+
+
+def is_sensitive_static_path(path):
+    decoded = unquote_plus(path).replace("\\", "/")
+    if decoded.startswith("/data/") or decoded == "/data":
+        return True
+    blocked = {
+        "/server.py",
+        "/server-runtime.log",
+        "/server.err.log",
+        "/server.out.log",
+        "/google-client-id.txt",
+    }
+    return decoded in blocked or decoded.endswith(".pyc")
+
+
 class ClassroomHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(ROOT), **kwargs)
@@ -676,9 +883,15 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
         return
 
     def end_headers(self):
-        self.send_header("Access-Control-Allow-Origin", "*")
+        allowed_origin = is_allowed_origin(self)
+        if allowed_origin:
+            self.send_header("Access-Control-Allow-Origin", allowed_origin)
+            self.send_header("Vary", "Origin")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Teacher-Token, X-Course-Code, X-CSRF-Token")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Referrer-Policy", "same-origin")
+        self.send_header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
         if not urlparse(self.path).path.startswith("/api/"):
             self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
             self.send_header("Pragma", "no-cache")
@@ -689,9 +902,20 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
         self.send_response(204)
         self.end_headers()
 
+    def do_HEAD(self):
+        path = urlparse(self.path).path
+        if is_sensitive_static_path(path):
+            self.send_response(404)
+            self.end_headers()
+            return
+        super().do_HEAD()
+
     def do_GET(self):
         parsed_url = urlparse(self.path)
         path = parsed_url.path
+        if is_sensitive_static_path(path):
+            json_response(self, 404, {"error": "Not found"})
+            return
 
         if path == "/api/teacher/me":
             teacher = require_teacher(self)
@@ -714,15 +938,17 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
             json_response(self, 200, storage_status())
             return
 
+        if path == "/api/csrf":
+            json_response_with_csrf(self, 200, {"ok": True})
+            return
+
         course_code = parse_course_lookup_path(path)
         if course_code:
             room, course = find_course_by_code(course_code)
             if not room or not course:
                 json_response(self, 404, {"error": "Course not found"})
                 return
-            summary = room_summary(room)
-            summary["activeCourseId"] = course["id"]
-            summary["joinedCourseCode"] = course_code
+            summary = room_summary(room, course_id=course["id"])
             json_response(self, 200, summary)
             return
 
@@ -731,16 +957,18 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
             if not room_exists(room_code):
                 json_response(self, 200, {"room": room_code, "exists": False})
                 return
-            json_response(self, 200, room_summary(load_room(room_code)))
+            teacher, room = require_room_owner(self, room_code)
+            if not teacher:
+                return
+            json_response(self, 200, room_summary(room, include_codes=True, include_teacher=True))
             return
 
         room_code = parse_courses_path(path)
         if room_code:
-            if not room_exists(room_code):
-                json_response(self, 404, {"error": "Room not found"})
+            teacher, room = require_room_owner(self, room_code)
+            if not teacher:
                 return
-            room = load_room(room_code)
-            json_response(self, 200, {"courses": room["courses"], "activeCourseId": room["activeCourseId"]})
+            json_response(self, 200, {"courses": [public_course(course, True) for course in room["courses"]], "activeCourseId": room["activeCourseId"]})
             return
 
         parsed = parse_course_posts_meta_path(path)
@@ -777,21 +1005,26 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
             if course_id not in room["postsByCourse"]:
                 json_response(self, 404, {"error": "Course not found"})
                 return
-            student_name = unquote_plus(parse_qs(parsed_url.query).get("student", [""])[0]).strip()[:18]
+            student_name = clean_text(unquote_plus(parse_qs(parsed_url.query).get("student", [""])[0]), 18)
             course_posts = room["postsByCourse"][course_id]
             if student_name:
+                if not course_matches_code(room, course_id, request_course_code(self, query=parsed_url.query)):
+                    json_response(self, 403, {"error": "Invalid course code"})
+                    return
                 course_posts = [post for post in course_posts if str(post.get("name", "")).strip() == student_name]
             else:
                 teacher, _room = require_room_owner(self, room_code)
                 if not teacher:
                     return
-            json_response(self, 200, course_posts)
+            json_response(self, 200, sanitize_posts(course_posts))
             return
 
         super().do_GET()
 
     def do_POST(self):
         path = urlparse(self.path).path
+        if not validate_csrf(self, path):
+            return
 
         if path in {"/api/teacher/register", "/api/teacher/login"}:
             payload = read_json(self)
@@ -805,19 +1038,22 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
             if error:
                 json_response(self, 401 if path.endswith("/login") else 400, {"error": error})
                 return
-            json_response(self, 200, {"token": issue_session(teacher), "teacher": public_teacher(teacher)})
+            json_response_with_csrf(self, 200, {"token": issue_session(teacher), "teacher": public_teacher(teacher)})
             return
 
         if path == "/api/teacher/reset-password":
+            auth_teacher = require_teacher(self)
+            if not auth_teacher:
+                return
             payload = read_json(self)
             if payload is None:
                 json_response(self, 400, {"error": "Invalid JSON"})
                 return
-            teacher, error = reset_teacher_password(payload)
+            teacher, error = reset_teacher_password(auth_teacher, payload)
             if error:
                 json_response(self, 400, {"error": error})
                 return
-            json_response(self, 200, {"token": issue_session(teacher), "teacher": public_teacher(teacher)})
+            json_response_with_csrf(self, 200, {"token": issue_session(teacher), "teacher": public_teacher(teacher)})
             return
 
         if parse_create_room_path(path):
@@ -837,7 +1073,7 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
             room["courses"][0]["name"] = sanitize_course_name(payload.get("courseName")) or room["courses"][0]["name"]
             room["courses"][0]["code"] = generate_course_code()
             save_room(room_code, room)
-            json_response(self, 200, room_summary(room))
+            json_response(self, 200, room_summary(room, include_codes=True, include_teacher=True))
             return
 
         room_code = parse_room_path(path)
@@ -868,7 +1104,7 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
                     return
                 room["courses"][0]["code"] = course_code
                 save_room(room_code, room)
-            json_response(self, 200, room_summary(room))
+            json_response(self, 200, room_summary(room, include_codes=True, include_teacher=True))
             return
 
         room_code = parse_rotate_path(path)
@@ -877,7 +1113,7 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
             if not teacher:
                 return
             room = rotate_active_course_code(room_code)
-            json_response(self, 200, room_summary(room))
+            json_response(self, 200, room_summary(room, include_codes=True, include_teacher=True))
             return
 
         room_code = parse_courses_path(path)
@@ -899,7 +1135,7 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
             room["activeCourseId"] = course["id"]
             room["postsByCourse"][course["id"]] = []
             save_room(room_code, room)
-            json_response(self, 200, {"course": course, "courses": room["courses"], "activeCourseId": course["id"]})
+            json_response(self, 200, {"course": public_course(course, True), "courses": [public_course(item, True) for item in room["courses"]], "activeCourseId": course["id"]})
             return
 
         parsed = parse_course_posts_path(path)
@@ -917,10 +1153,10 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
             json_response(self, 400, {"error": "Invalid JSON or upload is too large"})
             return
 
-        name = str(payload.get("name", "")).strip()[:18]
-        prompt = str(payload.get("prompt", "")).strip()[:32] or "中文手寫練習"
+        name = clean_text(payload.get("name"), 18)
+        prompt = clean_text(payload.get("prompt"), 32, "中文手寫練習")
         image = str(payload.get("image", ""))
-        if not name or not image.startswith("data:image/png;base64,"):
+        if not name or not valid_png_data_url(image):
             json_response(self, 400, {"error": "Missing name or handwriting image"})
             return
 
@@ -928,6 +1164,9 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
             room = load_room(room_code)
             if course_id not in room["postsByCourse"]:
                 json_response(self, 404, {"error": "Course not found"})
+                return
+            if not course_matches_code(room, course_id, request_course_code(self, payload=payload)):
+                json_response(self, 403, {"error": "Invalid course code"})
                 return
 
             room["postsByCourse"][course_id].insert(
@@ -943,10 +1182,12 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
             )
             save_room(room_code, room)
             own_posts = [post for post in room["postsByCourse"][course_id] if str(post.get("name", "")).strip() == name]
-        json_response(self, 200, own_posts)
+        json_response(self, 200, sanitize_posts(own_posts))
 
     def do_PATCH(self):
         path = urlparse(self.path).path
+        if not validate_csrf(self, path):
+            return
         room_code = parse_room_path(path)
         if room_code:
             teacher, room = require_room_owner(self, room_code)
@@ -958,7 +1199,7 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
                 return
             room["name"] = sanitize_room_name(payload.get("name"))
             save_room(room_code, room)
-            json_response(self, 200, room_summary(room))
+            json_response(self, 200, room_summary(room, include_codes=True, include_teacher=True))
             return
 
         parsed = parse_course_path(path)
@@ -977,12 +1218,14 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
             if course.get("id") == course_id:
                 course["name"] = sanitize_course_name(payload.get("name"))
                 save_room(room_code, room)
-                json_response(self, 200, {"course": course, "courses": room["courses"], "activeCourseId": room.get("activeCourseId", DEFAULT_COURSE_ID)})
+                json_response(self, 200, {"course": public_course(course, True), "courses": [public_course(item, True) for item in room["courses"]], "activeCourseId": room.get("activeCourseId", DEFAULT_COURSE_ID)})
                 return
         json_response(self, 404, {"error": "Course not found"})
 
     def do_DELETE(self):
         path = urlparse(self.path).path
+        if not validate_csrf(self, path):
+            return
         room_code = parse_room_path(path)
         if room_code:
             teacher, _room = require_room_owner(self, room_code)
@@ -1010,7 +1253,7 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
                 json_response(self, 404, {"error": "Post not found"})
                 return
             save_room(room_code, room)
-            json_response(self, 200, room["postsByCourse"][course_id])
+            json_response(self, 200, sanitize_posts(room["postsByCourse"][course_id]))
             return
 
         course_target = parse_course_path(path)
@@ -1041,9 +1284,9 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
                 {
                     "deleted": True,
                     "courseId": course_id,
-                    "courses": room["courses"],
+                    "courses": [public_course(course, True) for course in room["courses"]],
                     "activeCourseId": active_course_id,
-                    "posts": room["postsByCourse"][active_course_id],
+                    "posts": sanitize_posts(room["postsByCourse"][active_course_id]),
                 },
             )
             return

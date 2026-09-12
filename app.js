@@ -2,6 +2,7 @@
 const LANGUAGE_KEY = "classroom-handwriting-language";
 const TEACHER_KEY = "classroom-handwriting-teacher";
 const TEACHER_TOKEN_KEY = "classroom-handwriting-teacher-token";
+const CSRF_TOKEN_KEY = "classroom-handwriting-csrf-token";
 const CANVAS_HEIGHT_KEY = "classroom-handwriting-canvas-height";
 const API_BASE = window.location.protocol === "file:" ? "http://127.0.0.1:8030" : "";
 
@@ -596,7 +597,7 @@ Object.assign(TRANSLATIONS["zh-Hans"], {
   teacherPasswordPlaceholder: "至少 6 个字",
   loginTeacher: "登入",
   registerTeacher: "建立账号",
-  resetTeacherPassword: "忘记密码",
+  resetTeacherPassword: "修改密码",
   logoutTeacher: "登出",
   loginRequired: "请先登入老师账号，才能建立房间。",
   loginSuccess: "老师账号已登入。",
@@ -604,6 +605,8 @@ Object.assign(TRANSLATIONS["zh-Hans"], {
   resetPasswordSuccess: "密码已重设并登入。",
   resetPasswordFailed: "无法重设密码，请确认账号，并输入至少 6 个字的新密码。",
   resetPasswordRequired: "请输入账号和新密码，再按忘记密码。",
+  resetPasswordLoginFirst: "请先登入老师账号，才能修改密码。",
+  newPasswordPrompt: "请输入新的老师密码，至少 6 个字。",
     loginFailed: "登入失败，请确认账号和密码。",
     registerFailed: "建立账号失败，账号可能已被使用，或密码少于 6 个字。",
     teacherSessionExpired: "老师登入已失效，请重新登入后再建立房间。",
@@ -623,7 +626,7 @@ Object.assign(TRANSLATIONS["zh-Hant"], {
   teacherPasswordPlaceholder: "至少 6 個字",
   loginTeacher: "登入",
   registerTeacher: "建立帳號",
-  resetTeacherPassword: "忘記密碼",
+  resetTeacherPassword: "修改密碼",
   logoutTeacher: "登出",
   loginRequired: "請先登入老師帳號，才能建立房間。",
   loginSuccess: "老師帳號已登入。",
@@ -631,6 +634,8 @@ Object.assign(TRANSLATIONS["zh-Hant"], {
   resetPasswordSuccess: "密碼已重設並登入。",
   resetPasswordFailed: "無法重設密碼，請確認帳號，並輸入至少 6 個字的新密碼。",
   resetPasswordRequired: "請輸入帳號和新密碼，再按忘記密碼。",
+  resetPasswordLoginFirst: "請先登入老師帳號，才能修改密碼。",
+  newPasswordPrompt: "請輸入新的老師密碼，至少 6 個字。",
     loginFailed: "登入失敗，請確認帳號和密碼。",
     registerFailed: "建立帳號失敗，帳號可能已被使用，或密碼少於 6 個字。",
     teacherSessionExpired: "老師登入已失效，請重新登入後再建立房間。",
@@ -650,7 +655,7 @@ Object.assign(TRANSLATIONS.en, {
   teacherPasswordPlaceholder: "At least 6 characters",
   loginTeacher: "Log in",
   registerTeacher: "Create account",
-  resetTeacherPassword: "Forgot password",
+  resetTeacherPassword: "Change password",
   logoutTeacher: "Log out",
   loginRequired: "Log in with a teacher account before creating a room.",
   loginSuccess: "Teacher account signed in.",
@@ -658,6 +663,8 @@ Object.assign(TRANSLATIONS.en, {
   resetPasswordSuccess: "Password reset and signed in.",
   resetPasswordFailed: "Could not reset the password. Check the account and use a new password with at least 6 characters.",
   resetPasswordRequired: "Enter the account and a new password, then press Forgot password.",
+  resetPasswordLoginFirst: "Log in with the teacher account before changing the password.",
+  newPasswordPrompt: "Enter the new teacher password, at least 6 characters.",
   loginFailed: "Login failed. Check the account and password.",
   registerFailed: "Could not create the account. It may already exist, or the password is too short.",
   teacherSessionExpired: "Teacher login expired. Please log in again before creating a room.",
@@ -677,7 +684,7 @@ Object.assign(TRANSLATIONS.ja, {
   teacherPasswordPlaceholder: "6文字以上",
   loginTeacher: "ログイン",
   registerTeacher: "アカウント作成",
-  resetTeacherPassword: "パスワードを忘れた",
+  resetTeacherPassword: "パスワード変更",
   logoutTeacher: "ログアウト",
   loginRequired: "部屋を作成する前に先生アカウントでログインしてください。",
   loginSuccess: "先生アカウントでログインしました。",
@@ -685,6 +692,8 @@ Object.assign(TRANSLATIONS.ja, {
   resetPasswordSuccess: "パスワードを再設定してログインしました。",
   resetPasswordFailed: "パスワードを再設定できません。アカウントを確認し、6文字以上の新しいパスワードを入力してください。",
   resetPasswordRequired: "アカウントと新しいパスワードを入力してから、パスワードを忘れたボタンを押してください。",
+  resetPasswordLoginFirst: "パスワードを変更する前に先生アカウントでログインしてください。",
+  newPasswordPrompt: "新しい先生パスワードを入力してください。6文字以上です。",
   loginFailed: "ログインできません。アカウントとパスワードを確認してください。",
   registerFailed: "アカウントを作成できません。既に使用中、またはパスワードが短すぎます。",
   teacherSessionExpired: "先生ログインの有効期限が切れました。もう一度ログインしてください。",
@@ -709,7 +718,7 @@ Object.assign(TRANSLATIONS.vi, {
   teacherPasswordPlaceholder: "Ít nhất 6 ký tự",
   loginTeacher: "Đăng nhập",
   registerTeacher: "Tạo tài khoản",
-  resetTeacherPassword: "Quên mật khẩu",
+  resetTeacherPassword: "Đổi mật khẩu",
   logoutTeacher: "Đăng xuất",
   loginRequired: "Hãy đăng nhập tài khoản giáo viên trước khi tạo phòng.",
   loginSuccess: "Đã đăng nhập tài khoản giáo viên.",
@@ -717,6 +726,8 @@ Object.assign(TRANSLATIONS.vi, {
   resetPasswordSuccess: "Đã đặt lại mật khẩu và đăng nhập.",
   resetPasswordFailed: "Không thể đặt lại mật khẩu. Hãy kiểm tra tài khoản và nhập mật khẩu mới ít nhất 6 ký tự.",
   resetPasswordRequired: "Nhập tài khoản và mật khẩu mới, rồi bấm Quên mật khẩu.",
+  resetPasswordLoginFirst: "Hãy đăng nhập tài khoản giáo viên trước khi đổi mật khẩu.",
+  newPasswordPrompt: "Nhập mật khẩu giáo viên mới, ít nhất 6 ký tự.",
   loginFailed: "Đăng nhập thất bại. Hãy kiểm tra tài khoản và mật khẩu.",
   registerFailed: "Không thể tạo tài khoản. Tài khoản có thể đã tồn tại hoặc mật khẩu quá ngắn.",
   teacherSessionExpired: "Phiên đăng nhập giáo viên đã hết hạn. Hãy đăng nhập lại.",
@@ -1085,6 +1096,7 @@ let activeRoom = "";
 let activeRoomName = "";
 let activeRole = "teacher";
 let activeCourseId = "default";
+let activeCourseCode = "";
 let currentLanguage = localStorage.getItem(LANGUAGE_KEY) || "zh-Hant";
 let useServer = true;
 let mode = "draw";
@@ -1718,6 +1730,25 @@ function authHeaders() {
   return token ? { "X-Teacher-Token": token } : {};
 }
 
+function csrfToken() {
+  return localStorage.getItem(CSRF_TOKEN_KEY) || "";
+}
+
+function saveCsrfToken(token) {
+  if (token) localStorage.setItem(CSRF_TOKEN_KEY, token);
+}
+
+function isMutatingMethod(method) {
+  return ["POST", "PUT", "PATCH", "DELETE"].includes(String(method || "GET").toUpperCase());
+}
+
+async function ensureCsrfToken() {
+  if (csrfToken()) return csrfToken();
+  const result = await apiRequest("/api/csrf", { skipCsrf: true });
+  saveCsrfToken(result.csrfToken);
+  return csrfToken();
+}
+
 async function continueAfterTeacherAuth(successKey) {
   activeRole = "teacher";
   roomMessage.textContent = "";
@@ -1783,10 +1814,16 @@ async function teacherAuth(mode) {
 }
 
 async function resetTeacherPassword() {
+  if (!teacherToken()) {
+    roomMessage.textContent = t("resetPasswordLoginFirst");
+    teacherUsername.focus();
+    return;
+  }
+  const promptedPassword = teacherPassword.value || window.prompt(t("newPasswordPrompt") || "New password") || "";
   const payload = {
     name: teacherName.value.trim(),
     username: teacherUsername.value.trim(),
-    password: teacherPassword.value,
+    password: promptedPassword,
   };
   if (!payload.username || !payload.password) {
     roomMessage.textContent = t("resetPasswordRequired");
@@ -1799,6 +1836,7 @@ async function resetTeacherPassword() {
   try {
     const result = await apiRequest("/api/teacher/reset-password", {
       method: "POST",
+      headers: authHeaders(),
       body: JSON.stringify(payload),
     });
     localStorage.setItem(TEACHER_TOKEN_KEY, result.token);
@@ -1817,6 +1855,7 @@ async function resetTeacherPassword() {
 function logoutTeacher() {
   localStorage.removeItem(TEACHER_TOKEN_KEY);
   localStorage.removeItem(TEACHER_KEY);
+  localStorage.removeItem(CSRF_TOKEN_KEY);
   teacherSession = {};
   teacherName.value = "";
   teacherUsername.value = "";
@@ -2056,7 +2095,8 @@ function coursePostsPath(courseId = activeCourseId) {
   const basePath = `/api/rooms/${encodeURIComponent(activeRoom)}/courses/${encodeURIComponent(courseId)}/posts`;
   const name = studentName?.value?.trim() || "";
   if (activeRole === "student") {
-    return `${basePath}?student=${encodeURIComponent(name)}`;
+    const params = new URLSearchParams({ student: name, courseCode: activeCourseCode || roomCodeInput.value.trim() });
+    return `${basePath}?${params.toString()}`;
   }
   return basePath;
 }
@@ -2078,7 +2118,7 @@ function loadSavedRoom() {
 }
 
 function saveCurrentRoom() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ room: activeRoom, roomName: activeRoomName, role: activeRole, courseId: activeCourseId }));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ room: activeRoom, roomName: activeRoomName, role: activeRole, courseId: activeCourseId, courseCode: activeRole === "student" ? activeCourseCode : "" }));
 }
 
 function currentViewName() {
@@ -2093,6 +2133,7 @@ function browserStateForCurrentView() {
     roomName: activeRoomName || "",
     role: activeRole || new FormData(roomForm).get("role") || "student",
     courseId: activeCourseId || "default",
+    courseCode: activeRole === "student" ? activeCourseCode : "",
   };
 }
 
@@ -2111,6 +2152,7 @@ function leaveCurrentRoomForHistory() {
   postsVersion = "";
   courses = [{ id: "default", name: t("defaultCourse") }];
   activeCourseId = "default";
+  activeCourseCode = "";
   if (refreshTimer) window.clearInterval(refreshTimer);
   if (postsVersionTimer) window.clearInterval(postsVersionTimer);
   if (courseRefreshTimer) window.clearInterval(courseRefreshTimer);
@@ -2152,6 +2194,7 @@ function primeSavedRoomUi() {
   activeRoomName = String(saved.roomName || "").trim();
   activeRole = saved.role === "teacher" ? "teacher" : "student";
   activeCourseId = saved.courseId || "default";
+  activeCourseCode = activeRole === "student" ? String(saved.courseCode || "") : "";
   roomCodeInput.value = activeRoom;
   teacherRoomCodeInput.value = activeRoom;
   if (teacherRoomNameInput) teacherRoomNameInput.value = activeRoomName;
@@ -2207,21 +2250,33 @@ function updateEndCourseButton() {
 async function apiRequest(path, options = {}) {
   let response;
   try {
+    const method = String(options.method || "GET").toUpperCase();
     const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+    if (!options.skipCsrf && isMutatingMethod(method)) {
+      headers["X-CSRF-Token"] = await ensureCsrfToken();
+    }
     response = await fetch(`${API_BASE}${path}`, {
       ...options,
       headers,
       cache: "no-store",
+      credentials: "include",
     });
   } catch (error) {
     throw new Error("Server is not reachable", { cause: error });
   }
   if (!response.ok) {
+    if (!options.skipCsrf && !options.csrfRetry && response.status === 403 && isMutatingMethod(options.method)) {
+      localStorage.removeItem(CSRF_TOKEN_KEY);
+      await ensureCsrfToken();
+      return apiRequest(path, { ...options, csrfRetry: true });
+    }
     const error = new Error(`Request failed: ${response.status}`);
     error.status = response.status;
     throw error;
   }
-  return response.json();
+  const result = await response.json();
+  saveCsrfToken(result.csrfToken);
+  return result;
 }
 
 async function enterRoom(roomCode, role, options = {}) {
@@ -2280,6 +2335,7 @@ async function enterRoom(roomCode, role, options = {}) {
     activeRole = role;
     courses = roomInfo.courses?.length ? roomInfo.courses : [{ id: "default", name: t("defaultCourse") }];
     activeCourseId = roomInfo.activeCourseId || courses[0].id;
+    activeCourseCode = isTeacherRole ? (activeCourse().code || "") : roomCode;
     useServer = true;
     roomMessage.textContent = "";
     teacherDashboardMessage.textContent = "";
@@ -2315,21 +2371,25 @@ async function restoreSavedRoom() {
   const saved = loadSavedRoom();
   if (!saved || !validateRoomCode(String(saved.room || ""))) return;
   if (saved.role === "teacher" && !teacherToken()) return;
+  if (saved.role !== "teacher" && !validateCourseCode(String(saved.courseCode || ""))) return;
 
   try {
-    const roomInfo = await apiRequest(roomInfoPath(saved.room));
+    const roomInfo = saved.role === "teacher"
+      ? await apiRequest(roomInfoPath(saved.room), { headers: authHeaders() })
+      : await apiRequest(courseLookupPath(saved.courseCode));
     if (!roomInfo.exists) {
       localStorage.removeItem(STORAGE_KEY);
       return;
     }
 
-    activeRoom = String(saved.room);
+    activeRoom = String(roomInfo.room || saved.room);
     activeRoomName = String(roomInfo.name || saved.roomName || "").trim();
     activeRole = saved.role === "teacher" ? "teacher" : "student";
     courses = roomInfo.courses?.length ? roomInfo.courses : [{ id: "default", name: t("defaultCourse") }];
     activeCourseId = courses.some((course) => course.id === saved.courseId)
       ? saved.courseId
       : roomInfo.activeCourseId || courses[0].id;
+    activeCourseCode = activeRole === "student" ? String(saved.courseCode || "") : (activeCourse().code || "");
     useServer = true;
     roomCodeInput.value = activeRoom;
     teacherRoomCodeInput.value = activeRoom;
@@ -2363,9 +2423,9 @@ function startTimers() {
 }
 
 async function refreshCourses({ quiet = false } = {}) {
-  if (!activeRoom || !useServer) return;
+  if (!activeRoom || !useServer || activeRole !== "teacher") return;
   try {
-    const data = await apiRequest(coursesPath());
+    const data = await apiRequest(coursesPath(), { headers: authHeaders() });
     const previous = activeCourseId;
     courses = data.courses?.length ? data.courses : courses;
     if (!courses.some((course) => course.id === activeCourseId)) {
@@ -2560,6 +2620,7 @@ async function deleteRoom(roomCode = activeRoom, options = {}) {
       postsVersion = "";
       courses = [];
       activeCourseId = "default";
+      activeCourseCode = "";
       if (refreshTimer) window.clearInterval(refreshTimer);
       if (postsVersionTimer) window.clearInterval(postsVersionTimer);
       if (courseRefreshTimer) window.clearInterval(courseRefreshTimer);
@@ -3134,6 +3195,7 @@ async function submitPost() {
     name: studentName.value.trim(),
     prompt: promptText.value.trim() || t("defaultPrompt"),
     image: masterCanvas.toDataURL("image/png"),
+    courseCode: activeCourseCode || roomCodeInput.value.trim(),
   };
 
   document.querySelector("#submitButton").disabled = true;
@@ -3347,6 +3409,7 @@ deleteCourseButton.addEventListener("click", deleteCourse);
 
 courseSelect.addEventListener("change", async () => {
   activeCourseId = courseSelect.value;
+  activeCourseCode = activeRole === "teacher" ? (activeCourse().code || "") : activeCourseCode;
   syncCourseNameInput(true);
   saveCurrentRoom();
   setRoomUi();
