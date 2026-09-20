@@ -5,6 +5,8 @@ const TEACHER_TOKEN_KEY = "classroom-handwriting-teacher-token";
 const CSRF_TOKEN_KEY = "classroom-handwriting-csrf-token";
 const CANVAS_HEIGHT_KEY = "classroom-handwriting-canvas-height";
 const API_BASE = window.location.protocol === "file:" ? "http://127.0.0.1:8030" : "";
+const POST_IMAGE_MAX_WIDTH = 900;
+const POST_IMAGE_MAX_HEIGHT = 520;
 
 const TRANSLATIONS = {
   "zh-Hans": {
@@ -3198,6 +3200,24 @@ function setMode(nextMode) {
   });
 }
 
+function exportPostImageDataUrl() {
+  const sourceWidth = masterCanvas.width || canvas.width || 1;
+  const sourceHeight = masterCanvas.height || canvas.height || 1;
+  const scale = Math.min(
+    1,
+    POST_IMAGE_MAX_WIDTH / sourceWidth,
+    POST_IMAGE_MAX_HEIGHT / sourceHeight
+  );
+  const output = document.createElement("canvas");
+  output.width = Math.max(1, Math.round(sourceWidth * scale));
+  output.height = Math.max(1, Math.round(sourceHeight * scale));
+  const outputCtx = output.getContext("2d");
+  outputCtx.imageSmoothingEnabled = true;
+  outputCtx.imageSmoothingQuality = "high";
+  outputCtx.drawImage(masterCanvas, 0, 0, output.width, output.height);
+  return output.toDataURL("image/png");
+}
+
 async function submitPost() {
   if (!activeRoom) {
     helperText.textContent = t("enterFirst");
@@ -3212,7 +3232,7 @@ async function submitPost() {
   const post = {
     name: studentName.value.trim(),
     prompt: promptText.value.trim() || t("defaultPrompt"),
-    image: masterCanvas.toDataURL("image/png"),
+    image: exportPostImageDataUrl(),
     courseCode: activeCourseCode || roomCodeInput.value.trim(),
   };
 

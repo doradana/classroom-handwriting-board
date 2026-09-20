@@ -38,6 +38,7 @@ DELETED_ROOMS_FILE = DATA_ROOT / "deleted-rooms.json"
 LEGACY_DATA_ROOT = ROOT / "data"
 MAX_BODY_BYTES = 4 * 1024 * 1024
 MAX_IMAGE_DATA_URL_BYTES = 3 * 1024 * 1024
+MAX_POSTS_PER_COURSE = 200
 SESSION_MAX_AGE = timedelta(days=14)
 CSRF_COOKIE_NAME = "classroom_csrf"
 ROOM_RE = re.compile(r"^[0-9]{4,8}$")
@@ -1257,6 +1258,7 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
                     "createdAt": now_iso(),
                 },
             )
+            room["postsByCourse"][course_id] = room["postsByCourse"][course_id][:MAX_POSTS_PER_COURSE]
             save_room(room_code, room)
             own_posts = [post for post in room["postsByCourse"][course_id] if str(post.get("name", "")).strip() == name]
         json_response(self, 200, sanitize_posts(own_posts))
