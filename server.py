@@ -12,6 +12,7 @@ import re
 import secrets
 import sys
 import threading
+import time
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -46,11 +47,60 @@ USERNAME_RE = re.compile(r"^[A-Za-z0-9_.@-]{3,60}$")
 CONTROL_CHARS_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 DEFAULT_COURSE_ID = "default"
 DATA_LOCK = threading.RLock()
+FILE_RETRY_DELAYS = (0.03, 0.08, 0.16, 0.32, 0.64)
 
 
 def ensure_data_root():
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     DATA_ROOT.mkdir(parents=True, exist_ok=True)
+
+
+def replace_file_with_retry(temp_file, target_file):
+    last_error = None
+    for index, delay in enumerate((0, *FILE_RETRY_DELAYS)):
+        if delay:
+            time.sleep(delay)
+        try:
+            temp_file.replace(target_file)
+            return
+        except PermissionError as error:
+            last_error = error
+            if index == len(FILE_RETRY_DELAYS):
+                break
+
+    try:
+        target_file.write_bytes(temp_file.read_bytes())
+        return
+    except PermissionError:
+        if last_error:
+            raise last_error
+        raise
+
+
+def write_json_file(path, payload):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp_file = path.with_name(f"{path.stem}.{threading.get_ident()}.{uuid.uuid4().hex}.tmp")
+    try:
+        temp_file.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        replace_file_with_retry(temp_file, path)
+    finally:
+        temp_file.unlink(missing_ok=True)
+
+
+def unlink_file_with_retry(path):
+    last_error = None
+    for index, delay in enumerate((0, *FILE_RETRY_DELAYS)):
+        if delay:
+            time.sleep(delay)
+        try:
+            path.unlink(missing_ok=True)
+            return
+        except PermissionError as error:
+            last_error = error
+            if index == len(FILE_RETRY_DELAYS):
+                break
+    if last_error:
+        raise last_error
 
 
 def load_deleted_rooms():
@@ -64,13 +114,7 @@ def load_deleted_rooms():
 
 def save_deleted_rooms(rooms):
     ensure_data_root()
-    payload = {"rooms": rooms}
-    temp_file = DELETED_ROOMS_FILE.with_name(f"{DELETED_ROOMS_FILE.stem}.{threading.get_ident()}.{uuid.uuid4().hex}.tmp")
-    try:
-        temp_file.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-        temp_file.replace(DELETED_ROOMS_FILE)
-    finally:
-        temp_file.unlink(missing_ok=True)
+    write_json_file(DELETED_ROOMS_FILE, {"rooms": rooms})
 
 
 def mark_room_deleted(room_code, teacher=None):
@@ -112,11 +156,12 @@ def migrate_legacy_data():
 
 def storage_status():
     ensure_data_root()
+    active_rooms = [path for path in DATA_DIR.glob("*.json") if ROOM_RE.match(path.stem) and not room_is_deleted(path.stem)]
     return {
         "dataRoot": str(DATA_ROOT),
         "roomsDir": str(DATA_DIR),
         "persistent": str(DATA_ROOT).replace("\\", "/").startswith("/var/data"),
-        "rooms": len(list(DATA_DIR.glob("*.json"))),
+        "rooms": len(active_rooms),
         "teachersFile": TEACHERS_FILE.exists(),
     }
 
@@ -148,10 +193,8 @@ def load_teachers():
 
 
 def save_teachers(data):
-    TEACHERS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    temp_file = TEACHERS_FILE.with_suffix(".tmp")
-    temp_file.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-    temp_file.replace(TEACHERS_FILE)
+    with DATA_LOCK:
+        write_json_file(TEACHERS_FILE, data)
 
 
 def session_secret():
@@ -302,7 +345,7 @@ def room_file(room_code):
 
 def room_exists(room_code):
     path = room_file(room_code)
-    return path is not None and path.exists()
+    return path is not None and path.exists() and not room_is_deleted(room_code)
 
 
 def generate_room_code():
@@ -446,13 +489,7 @@ def save_room(room_code, room):
     if path is None:
         raise ValueError("Invalid room code")
     with DATA_LOCK:
-        DATA_DIR.mkdir(parents=True, exist_ok=True)
-        temp_file = path.with_name(f"{path.stem}.{threading.get_ident()}.{uuid.uuid4().hex}.tmp")
-        try:
-            temp_file.write_text(json.dumps(room, ensure_ascii=False, indent=2), encoding="utf-8")
-            temp_file.replace(path)
-        finally:
-            temp_file.unlink(missing_ok=True)
+        write_json_file(path, room)
 
 
 def rotate_room_code(room_code):
@@ -469,7 +506,7 @@ def rotate_room_code(room_code):
     room["room"] = new_code
     room["lastRotatedAt"] = now_iso()
     save_room(new_code, room)
-    old_path.unlink(missing_ok=True)
+    unlink_file_with_retry(old_path)
     return room
 
 
@@ -773,7 +810,7 @@ def teacher_history(teacher):
     rooms = []
     for path in DATA_DIR.glob("*.json"):
         room_code = path.stem
-        if not ROOM_RE.match(room_code):
+        if not ROOM_RE.match(room_code) or room_is_deleted(room_code):
             continue
         room = load_room(room_code)
         if not room_belongs_to_teacher(room, teacher):
@@ -811,7 +848,7 @@ def find_course_by_code(course_code):
     ensure_data_root()
     for path in DATA_DIR.glob("*.json"):
         room_code = path.stem
-        if not ROOM_RE.match(room_code):
+        if not ROOM_RE.match(room_code) or room_is_deleted(room_code):
             continue
         room = load_room(room_code)
         for course in room.get("courses", []):
@@ -827,7 +864,7 @@ def course_code_in_use(course_code, allow_room_code=None, allow_course_id=None):
     ensure_data_root()
     for path in DATA_DIR.glob("*.json"):
         room_code = path.stem
-        if not ROOM_RE.match(room_code):
+        if not ROOM_RE.match(room_code) or room_is_deleted(room_code):
             continue
         data = load_room_raw(room_code)
         courses = data.get("courses", [])
@@ -1272,8 +1309,12 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
             if not teacher:
                 return
             mark_room_deleted(room_code, teacher)
-            room_file(room_code).unlink(missing_ok=True)
-            json_response(self, 200, {"deleted": True, "room": room_code})
+            file_removed = True
+            try:
+                unlink_file_with_retry(room_file(room_code))
+            except OSError:
+                file_removed = False
+            json_response(self, 200, {"deleted": True, "room": room_code, "fileRemoved": file_removed})
             return
 
         single_post = parse_single_post_path(path)
