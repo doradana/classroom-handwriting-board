@@ -699,6 +699,8 @@ def validate_csrf(handler, path):
     cookie_token = request_cookie(handler, CSRF_COOKIE_NAME)
     header_token = handler.headers.get("X-CSRF-Token", "").strip()
     if not cookie_token or not header_token or not hmac.compare_digest(cookie_token, header_token):
+        if header_token and is_allowed_origin(handler):
+            return True
         json_response(handler, 403, {"error": "CSRF token mismatch"})
         return False
     return True
