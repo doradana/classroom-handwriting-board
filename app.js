@@ -1131,6 +1131,7 @@ let activeStrokePointerId = null;
 let touchPanState = null;
 let desktopPanState = null;
 let isSpacePanning = false;
+let immediateStrokeDisplay = false;
 const activeTouchPointers = new Map();
 let usageGuideRole = "teacher";
 let usageGuideStepIndex = 0;
@@ -2913,6 +2914,7 @@ function cancelActiveStroke() {
   lastMidPoint = null;
   smoothPoint = null;
   activeStrokePointerId = null;
+  immediateStrokeDisplay = false;
   if (previous) {
     restoreUndoState(previous);
   } else {
@@ -2947,6 +2949,10 @@ function resetCanvasDraft() {
 
 function isTouchPointer(event) {
   return event.pointerType === "touch";
+}
+
+function shouldUseImmediateInk(event) {
+  return event.pointerType === "touch" || event.pointerType === "pen";
 }
 
 function rememberTouchPointer(event) {
@@ -3047,20 +3053,42 @@ function pointerPoint(event) {
   };
 }
 
-function applyBrushStyle() {
-  masterCtx.globalCompositeOperation = mode === "erase" ? "destination-out" : "source-over";
-  masterCtx.strokeStyle = mode === "erase" ? "rgba(0,0,0,1)" : inkColor.value;
-  masterCtx.fillStyle = mode === "erase" ? "rgba(0,0,0,1)" : inkColor.value;
-  masterCtx.lineWidth = Number(brushSize.value);
-  masterCtx.lineCap = "round";
-  masterCtx.lineJoin = "round";
-  masterCtx.miterLimit = 1;
+function applyBrushStyle(targetCtx = masterCtx, scale = 1) {
+  targetCtx.globalCompositeOperation = mode === "erase" ? "destination-out" : "source-over";
+  targetCtx.strokeStyle = mode === "erase" ? "rgba(0,0,0,1)" : inkColor.value;
+  targetCtx.fillStyle = mode === "erase" ? "rgba(0,0,0,1)" : inkColor.value;
+  targetCtx.lineWidth = Number(brushSize.value) * scale;
+  targetCtx.lineCap = "round";
+  targetCtx.lineJoin = "round";
+  targetCtx.miterLimit = 1;
 }
 
-function drawBrushCircle(point, size = Number(brushSize.value)) {
-  masterCtx.beginPath();
-  masterCtx.arc(point.x, point.y, size / 2, 0, Math.PI * 2);
-  masterCtx.fill();
+function drawBrushCircle(point, size = Number(brushSize.value), targetCtx = masterCtx, scale = 1) {
+  targetCtx.beginPath();
+  targetCtx.arc(point.x * scale, point.y * scale, (size * scale) / 2, 0, Math.PI * 2);
+  targetCtx.fill();
+}
+
+function drawStrokeGeometry(targetCtx, startPoint, controlPoint, midpoint, fromPoint, nextPoint, size, scale = 1) {
+  targetCtx.beginPath();
+  targetCtx.moveTo(startPoint.x * scale, startPoint.y * scale);
+  targetCtx.quadraticCurveTo(
+    controlPoint.x * scale,
+    controlPoint.y * scale,
+    midpoint.x * scale,
+    midpoint.y * scale,
+  );
+  targetCtx.stroke();
+
+  const distance = Math.hypot(nextPoint.x - fromPoint.x, nextPoint.y - fromPoint.y);
+  const steps = Math.max(1, Math.ceil(distance / Math.max(1.5, size * 0.22)));
+  for (let index = 1; index <= steps; index += 1) {
+    const ratio = index / steps;
+    drawBrushCircle({
+      x: fromPoint.x + (nextPoint.x - fromPoint.x) * ratio,
+      y: fromPoint.y + (nextPoint.y - fromPoint.y) * ratio,
+    }, size, targetCtx, scale);
+  }
 }
 
 function strokeToPoint(point, options = {}) {
@@ -3072,23 +3100,14 @@ function strokeToPoint(point, options = {}) {
     x: origin.x + (point.x - origin.x) * smoothing,
     y: origin.y + (point.y - origin.y) * smoothing,
   };
-  const distance = Math.hypot(nextPoint.x - lastPoint.x, nextPoint.y - lastPoint.y);
-  const steps = Math.max(1, Math.ceil(distance / Math.max(1.5, size * 0.22)));
   const midpoint = {
     x: (lastPoint.x + nextPoint.x) / 2,
     y: (lastPoint.y + nextPoint.y) / 2,
   };
   const startPoint = lastMidPoint || lastPoint;
-  masterCtx.beginPath();
-  masterCtx.moveTo(startPoint.x, startPoint.y);
-  masterCtx.quadraticCurveTo(lastPoint.x, lastPoint.y, midpoint.x, midpoint.y);
-  masterCtx.stroke();
-  for (let index = 1; index <= steps; index += 1) {
-    const ratio = index / steps;
-    drawBrushCircle({
-      x: lastPoint.x + (nextPoint.x - lastPoint.x) * ratio,
-      y: lastPoint.y + (nextPoint.y - lastPoint.y) * ratio,
-    }, size);
+  drawStrokeGeometry(masterCtx, startPoint, lastPoint, midpoint, lastPoint, nextPoint, size);
+  if (options.immediateDisplay) {
+    drawStrokeGeometry(ctx, startPoint, lastPoint, midpoint, lastPoint, nextPoint, size, options.displayScale || 1);
   }
   lastPoint = nextPoint;
   smoothPoint = nextPoint;
@@ -3105,19 +3124,28 @@ function beginStroke(event) {
   pushUndoState();
   drawing = true;
   activeStrokePointerId = event.pointerId;
+  immediateStrokeDisplay = shouldUseImmediateInk(event);
   lastPoint = pointerPoint(event);
   lastMidPoint = lastPoint;
   smoothPoint = lastPoint;
-  drawDot(lastPoint);
+  drawDot(lastPoint, { immediateDisplay: immediateStrokeDisplay });
 }
 
-function drawDot(point) {
+function drawDot(point, options = {}) {
   const size = Number(brushSize.value);
   masterCtx.save();
   applyBrushStyle();
   drawBrushCircle(point, size);
   masterCtx.restore();
-  renderCanvasFromMaster();
+  if (options.immediateDisplay) {
+    const displayScale = currentCanvasScale() / 100;
+    ctx.save();
+    applyBrushStyle(ctx, displayScale);
+    drawBrushCircle(point, size, ctx, displayScale);
+    ctx.restore();
+  } else {
+    renderCanvasFromMaster();
+  }
   if (mode === "draw") hasInk = true;
 }
 
@@ -3134,11 +3162,24 @@ function continueStroke(event) {
   if (activeStrokePointerId !== null && event.pointerId !== activeStrokePointerId) return;
   event.preventDefault();
   const events = typeof event.getCoalescedEvents === "function" ? event.getCoalescedEvents() : [event];
+  const displayScale = currentCanvasScale() / 100;
   masterCtx.save();
   applyBrushStyle();
-  events.forEach((pointerEvent) => strokeToPoint(pointerPoint(pointerEvent)));
+  if (immediateStrokeDisplay) {
+    ctx.save();
+    applyBrushStyle(ctx, displayScale);
+  }
+  events.forEach((pointerEvent) => strokeToPoint(pointerPoint(pointerEvent), {
+    immediateDisplay: immediateStrokeDisplay,
+    displayScale,
+  }));
+  if (immediateStrokeDisplay) {
+    ctx.restore();
+  }
   masterCtx.restore();
-  renderCanvasFromMaster();
+  if (!immediateStrokeDisplay) {
+    renderCanvasFromMaster();
+  }
   if (mode === "draw") hasInk = true;
 }
 
@@ -3150,23 +3191,44 @@ function endStroke(event) {
   if (activeStrokePointerId !== null && event?.pointerId !== undefined && event.pointerId !== activeStrokePointerId) return;
   if (!drawing) return;
   if (event?.clientX !== undefined && event?.clientY !== undefined && lastPoint) {
+    const displayScale = currentCanvasScale() / 100;
     masterCtx.save();
     applyBrushStyle();
-    strokeToPoint(pointerPoint(event), { finish: true });
+    if (immediateStrokeDisplay) {
+      ctx.save();
+      applyBrushStyle(ctx, displayScale);
+    }
+    strokeToPoint(pointerPoint(event), { finish: true, immediateDisplay: immediateStrokeDisplay, displayScale });
+    if (immediateStrokeDisplay) {
+      ctx.restore();
+    }
     masterCtx.restore();
   }
   if (lastPoint && lastMidPoint) {
+    const displayScale = currentCanvasScale() / 100;
     masterCtx.save();
     applyBrushStyle();
     masterCtx.beginPath();
     masterCtx.moveTo(lastMidPoint.x, lastMidPoint.y);
     masterCtx.lineTo(lastPoint.x, lastPoint.y);
     masterCtx.stroke();
+    if (immediateStrokeDisplay) {
+      ctx.save();
+      applyBrushStyle(ctx, displayScale);
+      ctx.beginPath();
+      ctx.moveTo(lastMidPoint.x * displayScale, lastMidPoint.y * displayScale);
+      ctx.lineTo(lastPoint.x * displayScale, lastPoint.y * displayScale);
+      ctx.stroke();
+      ctx.restore();
+    }
     masterCtx.restore();
-    renderCanvasFromMaster();
+    if (!immediateStrokeDisplay) {
+      renderCanvasFromMaster();
+    }
   }
   drawing = false;
   activeStrokePointerId = null;
+  immediateStrokeDisplay = false;
   lastPoint = null;
   lastMidPoint = null;
   smoothPoint = null;
