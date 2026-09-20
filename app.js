@@ -3592,17 +3592,12 @@ teacherSession = savedTeacher;
 window.addEventListener("load", loadTeacherHistory);
 
 courses = [{ id: "default", name: t("defaultCourse") }];
-primeSavedRoomUi();
+localStorage.removeItem(STORAGE_KEY);
 restoreCanvasScale();
 resizeCanvas({ center: true });
 languageSelect.addEventListener("change", () => applyLanguage(languageSelect.value));
 applyLanguage(currentLanguage);
 setRoomUi();
 renderBoard();
-restoreSavedRoom().finally(async () => {
-  if (!activeRoom && teacherToken()) {
-    await openTeacherDefaultClassroom();
-  }
-  initializeBrowserHistory();
-});
+initializeBrowserHistory();
 
