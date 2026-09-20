@@ -33,6 +33,7 @@ DATA_ROOT = default_data_root()
 DATA_DIR = DATA_ROOT / "rooms"
 TEACHERS_FILE = DATA_ROOT / "teachers.json"
 SESSION_SECRET_FILE = DATA_ROOT / "session-secret.txt"
+DELETED_ROOMS_FILE = DATA_ROOT / "deleted-rooms.json"
 LEGACY_DATA_ROOT = ROOT / "data"
 MAX_BODY_BYTES = 4 * 1024 * 1024
 MAX_IMAGE_DATA_URL_BYTES = 3 * 1024 * 1024
@@ -52,6 +53,43 @@ def ensure_data_root():
     DATA_ROOT.mkdir(parents=True, exist_ok=True)
 
 
+def load_deleted_rooms():
+    try:
+        data = json.loads(DELETED_ROOMS_FILE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        data = {}
+    rooms = data.get("rooms", {}) if isinstance(data, dict) else {}
+    return rooms if isinstance(rooms, dict) else {}
+
+
+def save_deleted_rooms(rooms):
+    ensure_data_root()
+    payload = {"rooms": rooms}
+    temp_file = DELETED_ROOMS_FILE.with_name(f"{DELETED_ROOMS_FILE.stem}.{threading.get_ident()}.{uuid.uuid4().hex}.tmp")
+    try:
+        temp_file.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        temp_file.replace(DELETED_ROOMS_FILE)
+    finally:
+        temp_file.unlink(missing_ok=True)
+
+
+def mark_room_deleted(room_code, teacher=None):
+    if not ROOM_RE.match(str(room_code or "")):
+        return
+    with DATA_LOCK:
+        rooms = load_deleted_rooms()
+        rooms[str(room_code)] = {
+            "deletedAt": now_iso(),
+            "teacherId": str((teacher or {}).get("id") or ""),
+            "teacherUsername": str((teacher or {}).get("username") or "").strip().lower(),
+        }
+        save_deleted_rooms(rooms)
+
+
+def room_is_deleted(room_code):
+    return str(room_code or "") in load_deleted_rooms()
+
+
 def migrate_legacy_data():
     if DATA_ROOT.resolve() == LEGACY_DATA_ROOT.resolve() or not LEGACY_DATA_ROOT.exists():
         return
@@ -65,6 +103,8 @@ def migrate_legacy_data():
     legacy_rooms = LEGACY_DATA_ROOT / "rooms"
     if legacy_rooms.exists():
         for legacy_room in legacy_rooms.glob("*.json"):
+            if room_is_deleted(legacy_room.stem):
+                continue
             target = DATA_DIR / legacy_room.name
             if not target.exists():
                 target.write_bytes(legacy_room.read_bytes())
@@ -268,7 +308,7 @@ def room_exists(room_code):
 def generate_room_code():
     for _ in range(200):
         code = str(uuid.uuid4().int % 100000000).zfill(8)[:8]
-        if code != "00000000" and not room_exists(code):
+        if code != "00000000" and not room_exists(code) and not room_is_deleted(code):
             return code
     raise RuntimeError("Could not generate an unused room code")
 
@@ -1231,6 +1271,7 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
             teacher, _room = require_room_owner(self, room_code)
             if not teacher:
                 return
+            mark_room_deleted(room_code, teacher)
             room_file(room_code).unlink(missing_ok=True)
             json_response(self, 200, {"deleted": True, "room": room_code})
             return
@@ -1268,14 +1309,17 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
                 return
             room["courses"] = [course for course in room["courses"] if course.get("id") != course_id]
             room["postsByCourse"].pop(course_id, None)
-            if not room["courses"]:
+            default_course = next((course for course in room["courses"] if course.get("id") == DEFAULT_COURSE_ID), None)
+            if not default_course:
                 default_course = default_room(room_code)["courses"][0]
+                default_course["code"] = generate_course_code()
+                room["courses"].insert(0, default_course)
+            room["postsByCourse"].setdefault(DEFAULT_COURSE_ID, [])
+            if not room["courses"]:
                 room["courses"] = [default_course]
-                room["postsByCourse"] = {default_course["id"]: []}
-            active_course_id = room["activeCourseId"]
-            if active_course_id == course_id or active_course_id not in {course.get("id") for course in room["courses"]}:
-                active_course_id = room["courses"][0]["id"]
-                room["activeCourseId"] = active_course_id
+                room["postsByCourse"] = {DEFAULT_COURSE_ID: []}
+            active_course_id = DEFAULT_COURSE_ID
+            room["activeCourseId"] = active_course_id
             room["postsByCourse"].setdefault(active_course_id, [])
             save_room(room_code, room)
             json_response(

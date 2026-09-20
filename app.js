@@ -1106,7 +1106,6 @@ let lastMidPoint = null;
 let smoothPoint = null;
 let hasInk = false;
 let undoStack = [];
-let undoInkStack = [];
 let resizeTimer = null;
 let studentNameRefreshTimer = null;
 let canvasBaseWidth = 0;
@@ -2525,6 +2524,7 @@ async function deleteCourse() {
     });
     courses = data.courses?.length ? data.courses : [{ id: "default", name: t("defaultCourse") }];
     activeCourseId = data.activeCourseId || courses[0]?.id || "default";
+    activeCourseCode = activeRole === "teacher" ? (activeCourse().code || "") : activeCourseCode;
     posts = data.posts || [];
     renderCourses();
     syncCourseNameInput(true);
@@ -2873,25 +2873,45 @@ function restoreCanvasScale() {
   updateCanvasScaleUi(100, { center: true });
 }
 
+function createCanvasSnapshot() {
+  if (!hasInk || !masterCanvas.width || !masterCanvas.height) return null;
+  const snapshot = document.createElement("canvas");
+  snapshot.width = masterCanvas.width;
+  snapshot.height = masterCanvas.height;
+  snapshot.getContext("2d").drawImage(masterCanvas, 0, 0);
+  return snapshot;
+}
+
 function pushUndoState() {
-  undoStack.push(masterCanvas.toDataURL("image/png"));
-  undoInkStack.push(hasInk);
-  if (undoStack.length > 20) undoStack.shift();
-  if (undoInkStack.length > 20) undoInkStack.shift();
+  undoStack.push({
+    snapshot: createCanvasSnapshot(),
+    hasInk,
+  });
+  if (undoStack.length > 12) undoStack.shift();
+}
+
+function restoreUndoState(state) {
+  masterCtx.save();
+  masterCtx.setTransform(1, 0, 0, 1, 0, 0);
+  masterCtx.clearRect(0, 0, masterCanvas.width, masterCanvas.height);
+  if (state?.snapshot) {
+    masterCtx.drawImage(state.snapshot, 0, 0);
+  }
+  masterCtx.restore();
+  hasInk = Boolean(state?.hasInk);
+  renderCanvasFromMaster();
 }
 
 function cancelActiveStroke() {
   if (!drawing) return;
   const previous = undoStack.pop();
-  const previousHasInk = undoInkStack.pop();
   drawing = false;
   lastPoint = null;
   lastMidPoint = null;
   smoothPoint = null;
   activeStrokePointerId = null;
   if (previous) {
-    hasInk = Boolean(previousHasInk);
-    restoreImage(previous);
+    restoreUndoState(previous);
   } else {
     renderCanvasFromMaster();
   }
@@ -3167,10 +3187,8 @@ function clearCanvas() {
 
 function undo() {
   const previous = undoStack.pop();
-  const previousHasInk = undoInkStack.pop();
   if (!previous) return;
-  hasInk = Boolean(previousHasInk);
-  restoreImage(previous);
+  restoreUndoState(previous);
 }
 
 function setMode(nextMode) {
