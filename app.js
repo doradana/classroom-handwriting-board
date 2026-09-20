@@ -1754,6 +1754,7 @@ async function continueAfterTeacherAuth(successKey) {
   activeRole = "teacher";
   roomMessage.textContent = "";
   teacherDashboardMessage.textContent = t(successKey);
+  setRoomUi();
   await openTeacherDefaultClassroom();
 }
 
@@ -2213,9 +2214,9 @@ function setRoomUi() {
   const inRoom = Boolean(activeRoom);
   const selectedRole = new FormData(roomForm).get("role");
   const isTeacherSelected = selectedRole === "teacher";
-  const showTeacherDashboard = false;
-  joinPanel.hidden = inRoom;
-  teacherDashboard.hidden = true;
+  const showTeacherDashboard = !inRoom && isTeacherSelected && Boolean(teacherToken());
+  joinPanel.hidden = inRoom || showTeacherDashboard;
+  teacherDashboard.hidden = !showTeacherDashboard;
   classroomLayout.hidden = !inRoom;
   if (usageGuideButton) usageGuideButton.hidden = inRoom;
   if (inRoom) closeUsageGuide();
