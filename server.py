@@ -36,6 +36,7 @@ TEACHERS_FILE = DATA_ROOT / "teachers.json"
 SESSION_SECRET_FILE = DATA_ROOT / "session-secret.txt"
 DELETED_ROOMS_FILE = DATA_ROOT / "deleted-rooms.json"
 LEGACY_DATA_ROOT = ROOT / "data"
+LEGACY_MIGRATION_ENABLED = os.environ.get("CLASSROOM_MIGRATE_LEGACY_DATA") == "1"
 MAX_BODY_BYTES = 4 * 1024 * 1024
 MAX_IMAGE_DATA_URL_BYTES = 3 * 1024 * 1024
 MAX_POSTS_PER_COURSE = 200
@@ -136,6 +137,8 @@ def room_is_deleted(room_code):
 
 
 def migrate_legacy_data():
+    if not LEGACY_MIGRATION_ENABLED:
+        return
     if DATA_ROOT.resolve() == LEGACY_DATA_ROOT.resolve() or not LEGACY_DATA_ROOT.exists():
         return
     ensure_data_root()
@@ -162,6 +165,8 @@ def storage_status():
         "dataRoot": str(DATA_ROOT),
         "roomsDir": str(DATA_DIR),
         "persistent": str(DATA_ROOT).replace("\\", "/").startswith("/var/data"),
+        "legacyDataPresent": LEGACY_DATA_ROOT.exists(),
+        "legacyMigrationEnabled": LEGACY_MIGRATION_ENABLED,
         "rooms": len(active_rooms),
         "teachersFile": TEACHERS_FILE.exists(),
     }
