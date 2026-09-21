@@ -65,6 +65,10 @@ const TRANSLATIONS = {
     myWorksTitle: "我的作品",
     switchRoom: "换房间",
     leaveRoom: "离开",
+    saveAndLeave: "保存并离开",
+    savingAndLeaving: "正在保存课程...",
+    saveLeaveSuccess: "课程已保存，可以从课程资料夹再次开启。",
+    saveLeaveFailed: "保存失败，请确认网络或服务器后再试。",
   clearBoard: "清空公布栏",
   deleteRoom: "删除房间",
     searchPlaceholder: "搜索姓名或主题",
@@ -164,6 +168,10 @@ const TRANSLATIONS = {
     myWorksTitle: "我的作品",
     switchRoom: "換房間",
     leaveRoom: "離開",
+    saveAndLeave: "儲存並離開",
+    savingAndLeaving: "正在儲存課程...",
+    saveLeaveSuccess: "課程已儲存，可以從課程資料夾再次開啟。",
+    saveLeaveFailed: "儲存失敗，請確認網路或伺服器後再試。",
   clearBoard: "清空公佈欄",
   deleteRoom: "刪除房間",
     searchPlaceholder: "搜尋姓名或主題",
@@ -263,6 +271,10 @@ const TRANSLATIONS = {
     myWorksTitle: "My work",
     switchRoom: "Switch room",
     leaveRoom: "Leave",
+    saveAndLeave: "Save and leave",
+    savingAndLeaving: "Saving course...",
+    saveLeaveSuccess: "Course saved. You can open it again from course folders.",
+    saveLeaveFailed: "Could not save. Check the connection or server and try again.",
   clearBoard: "Clear board",
   deleteRoom: "Delete room",
     searchPlaceholder: "Search name or topic",
@@ -362,6 +374,10 @@ const TRANSLATIONS = {
     myWorksTitle: "自分の作品",
     switchRoom: "ルーム変更",
     leaveRoom: "退出",
+    saveAndLeave: "保存して退出",
+    savingAndLeaving: "授業を保存しています...",
+    saveLeaveSuccess: "授業を保存しました。授業フォルダから再度開けます。",
+    saveLeaveFailed: "保存できません。接続またはサーバーを確認してください。",
   clearBoard: "掲示板を消去",
   deleteRoom: "部屋を削除",
     searchPlaceholder: "名前やテーマを検索",
@@ -456,6 +472,10 @@ const TRANSLATIONS = {
     myWorksTitle: "Bài của em",
     switchRoom: "Đổi phòng",
     leaveRoom: "Rời khỏi",
+    saveAndLeave: "Lưu và rời khỏi",
+    savingAndLeaving: "Đang lưu lớp...",
+    saveLeaveSuccess: "Đã lưu lớp. Có thể mở lại từ thư mục lớp học.",
+    saveLeaveFailed: "Không thể lưu. Hãy kiểm tra kết nối hoặc máy chủ.",
   clearBoard: "Xóa bảng",
   deleteRoom: "Xóa phòng",
     searchPlaceholder: "Tìm tên hoặc chủ đề",
@@ -1755,8 +1775,8 @@ async function continueAfterTeacherAuth(successKey) {
   activeRole = "teacher";
   roomMessage.textContent = "";
   teacherDashboardMessage.textContent = t(successKey);
+  await loadTeacherHistory();
   setRoomUi();
-  await openTeacherDefaultClassroom();
 }
 
 async function teacherAuth(mode) {
@@ -2181,6 +2201,37 @@ function showJoinFromHistory() {
   setRoomUi();
 }
 
+async function saveAndLeaveTeacherRoom() {
+  if (!activeRoom || activeRole !== "teacher") return;
+  const roomCode = activeRoom;
+  leaveRoomButton.disabled = true;
+  helperText.textContent = t("savingAndLeaving");
+  try {
+    await apiRequest(roomInfoPath(roomCode), { headers: authHeaders() });
+    if (activeCourseId) {
+      await apiRequest(coursePostsPath(), { headers: authHeaders() });
+    }
+    leaveCurrentRoomForHistory();
+    const teacherRole = roomForm.querySelector('input[name="role"][value="teacher"]');
+    if (teacherRole) teacherRole.checked = true;
+    activeRole = "teacher";
+    await loadTeacherHistory();
+    teacherDashboardMessage.textContent = t("saveLeaveSuccess");
+    setRoomUi();
+    updateBrowserHistory({ replace: true });
+  } catch (error) {
+    if (error.status === 401) {
+      localStorage.removeItem(TEACHER_TOKEN_KEY);
+      updateTeacherStatus();
+      helperText.textContent = t("teacherSessionExpired");
+    } else {
+      helperText.textContent = t("saveLeaveFailed");
+    }
+  } finally {
+    leaveRoomButton.disabled = false;
+  }
+}
+
 function initializeBrowserHistory() {
   window.history.replaceState({ view: "join", role: new FormData(roomForm).get("role") || "student" }, "", window.location.pathname || "/");
   const state = browserStateForCurrentView();
@@ -2223,7 +2274,10 @@ function setRoomUi() {
   if (inRoom) closeUsageGuide();
   classroomLayout.classList.toggle("student-writing-only", inRoom && activeRole === "student");
   boardPanel.hidden = !inRoom;
-  if (leaveRoomButton) leaveRoomButton.hidden = !inRoom;
+  if (leaveRoomButton) {
+    leaveRoomButton.hidden = !(inRoom && activeRole === "teacher");
+    leaveRoomButton.textContent = t("saveAndLeave");
+  }
   document.querySelector(".board-actions").hidden = true;
   coursePanel.hidden = activeRole !== "teacher";
   courseControls.hidden = activeRole !== "teacher";
@@ -3527,11 +3581,7 @@ document.querySelector("#switchRoomButton").addEventListener("click", () => {
   updateBrowserHistory();
 });
 
-leaveRoomButton?.addEventListener("click", () => {
-  leaveCurrentRoomForHistory();
-  setRoomUi();
-  updateBrowserHistory({ replace: true });
-});
+leaveRoomButton?.addEventListener("click", saveAndLeaveTeacherRoom);
 
 fullscreenBoardButton.addEventListener("click", () => {
   setBoardFullscreen(!isBoardFullscreen);
