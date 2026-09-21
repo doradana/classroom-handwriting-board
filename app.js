@@ -2286,10 +2286,13 @@ function setRoomUi() {
   renameRoomButton.hidden = activeRole !== "teacher";
   endCourseButton.hidden = activeRole !== "teacher";
   deleteRoomButton.hidden = activeRole !== "teacher";
+  if (showTeacherDashboard && teacherDashboardMessage?.parentElement && teacherHistory.parentElement !== teacherDashboardMessage.parentElement) {
+    teacherDashboardMessage.parentElement.append(teacherHistory);
+  }
   if (activeRole === "teacher" && inRoom && teacherHistory.nextElementSibling !== courseControls) {
     coursePanel.insertBefore(teacherHistory, courseControls);
   }
-  teacherHistory.hidden = !(activeRole === "teacher" && inRoom && teacherToken());
+  teacherHistory.hidden = !(teacherToken() && ((activeRole === "teacher" && inRoom) || showTeacherDashboard));
   teacherLoginCard.hidden = !isTeacherSelected;
   roomEntry.hidden = inRoom || isTeacherSelected;
   helperText.textContent = inRoom ? t(activeRole === "student" ? "helperInRoomStudent" : "helperInRoom") : t("helperLocked");
