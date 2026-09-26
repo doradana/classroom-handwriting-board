@@ -1,6 +1,8 @@
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote_plus, urlparse
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 import base64
 import binascii
 import hashlib
@@ -50,6 +52,7 @@ CONTROL_CHARS_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 DEFAULT_COURSE_ID = "default"
 DATA_LOCK = threading.RLock()
 FILE_RETRY_DELAYS = (0.03, 0.08, 0.16, 0.32, 0.64)
+FIREBASE_API_KEY = os.environ.get("FIREBASE_API_KEY") or "AIzaSyCmtnC-0L4vKnvlGaHhg4io7sy0dS7sLhY"
 
 
 def ensure_data_root():
@@ -269,6 +272,81 @@ def login_teacher(payload):
     _, digest = password_hash(password, teacher.get("salt", ""))
     if not hmac.compare_digest(digest, teacher.get("passwordHash", "")):
         return None, "Invalid account or password"
+    return teacher, None
+
+
+def firebase_account(id_token):
+    token = str(id_token or "").strip()
+    if not token:
+        return None, "Missing Firebase ID token"
+
+    request = Request(
+        f"https://identitytoolkit.googleapis.com/v1/accounts:lookup?key={FIREBASE_API_KEY}",
+        data=json.dumps({"idToken": token}).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urlopen(request, timeout=10) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except (HTTPError, URLError, TimeoutError, json.JSONDecodeError):
+        return None, "Invalid Firebase ID token"
+
+    users = payload.get("users") if isinstance(payload, dict) else None
+    if not isinstance(users, list) or not users:
+        return None, "Firebase user was not found"
+
+    account = users[0]
+    uid = clean_text(account.get("localId"), 128)
+    email = clean_text(account.get("email"), 254).lower()
+    if not uid or not email or not account.get("emailVerified"):
+        return None, "A verified Google email is required"
+
+    return {
+        "uid": uid,
+        "email": email,
+        "name": clean_text(account.get("displayName"), 40, email.split("@", 1)[0]),
+    }, None
+
+
+def login_firebase_teacher(id_token):
+    account, error = firebase_account(id_token)
+    if error:
+        return None, error
+
+    data = load_teachers()
+    teacher = next(
+        (
+            item
+            for item in data["teachers"]
+            if item.get("firebaseUid") == account["uid"]
+            or str(item.get("username", "")).strip().lower() == account["email"]
+        ),
+        None,
+    )
+
+    if teacher:
+        teacher["firebaseUid"] = account["uid"]
+        teacher["email"] = account["email"]
+        teacher["authProvider"] = "firebase-google"
+        if account["name"]:
+            teacher["name"] = account["name"]
+    else:
+        teacher = {
+            "id": uuid.uuid4().hex,
+            "username": account["email"],
+            "email": account["email"],
+            "name": account["name"],
+            "firebaseUid": account["uid"],
+            "authProvider": "firebase-google",
+            "salt": "",
+            "passwordHash": "",
+            "createdAt": now_iso(),
+            "passwordUpdatedAt": now_iso(),
+        }
+        data["teachers"].append(teacher)
+
+    save_teachers(data)
     return teacher, None
 
 
@@ -976,7 +1054,7 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Teacher-Token, X-Course-Code, X-CSRF-Token")
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "same-origin")
-        self.send_header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
+        self.send_header("Content-Security-Policy", "default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://lh3.googleusercontent.com; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com; frame-src https://handwritten-bulletin.firebaseapp.com https://accounts.google.com https://apis.google.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
         if not urlparse(self.path).path.startswith("/api/"):
             self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
             self.send_header("Pragma", "no-cache")
@@ -1109,6 +1187,18 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
     def do_POST(self):
         path = urlparse(self.path).path
         if not validate_csrf(self, path):
+            return
+
+        if path == "/api/teacher/firebase-login":
+            payload = read_json(self)
+            if payload is None:
+                json_response(self, 400, {"error": "Invalid JSON"})
+                return
+            teacher, error = login_firebase_teacher(payload.get("idToken"))
+            if error:
+                json_response(self, 401, {"error": error})
+                return
+            json_response_with_csrf(self, 200, {"token": issue_session(teacher), "teacher": public_teacher(teacher)})
             return
 
         if path in {"/api/teacher/register", "/api/teacher/login"}:

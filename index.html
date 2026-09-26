@@ -61,6 +61,9 @@
                 </div>
                 <button type="button" id="teacherLogoutButton" class="quiet-button" data-i18n="logoutTeacher" hidden>登出</button>
               </div>
+              <button type="button" id="googleTeacherLoginButton" class="primary-action firebase-login-button" data-i18n="googleLogin">使用 Google 登入</button>
+              <p class="form-note firebase-login-note" data-i18n="googleNote">使用 Google 登入後，就能安全保存自己的課程紀錄。</p>
+              <div class="login-divider" aria-hidden="true"><span>OR</span></div>
               <div class="teacher-fields" id="teacherFields">
                 <label>
                   <span data-i18n="teacherNameLabel">老師姓名</span>
@@ -277,6 +280,7 @@
       </section>
     </div>
 
-    <script src="./app.js?v=20260921-save-leave-list"></script>
+    <script type="module" src="./firebase-auth.js?v=20260926-firebase-auth"></script>
+    <script src="./app.js?v=20260926-firebase-auth"></script>
   </body>
 </html>

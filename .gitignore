@@ -1,0 +1,6 @@
+__pycache__/
+*.py[cod]
+data/
+server-runtime.log
+server.out.log
+server.err.log

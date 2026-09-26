@@ -21,13 +21,13 @@ const TRANSLATIONS = {
     teacherLoginTitle: "老师账号",
     teacherNotSignedIn: "尚未记录老师资料",
     teacherSignedIn: "已记录：{name}",
-    googleLogin: "登入老师账号",
-    googleUnavailable: "请使用网站老师账号登入。",
+    googleLogin: "使用 Google 登入",
+    googleUnavailable: "Google 登入暂时无法使用，请稍后再试。",
     teacherNameLabel: "老师姓名",
     teacherNamePlaceholder: "例如：王老师",
     teacherEmailLabel: "账号",
     teacherEmailPlaceholder: "teacher01",
-    googleNote: "老师使用网站账号登入后，就能保存自己的课程纪录。",
+    googleNote: "使用 Google 安全登入，并保留自己的课程纪录。",
     roomCodeLabel: "房间数字密码",
     roomCodePlaceholder: "例如：2468",
     enterRoom: "进入房间",
@@ -124,13 +124,13 @@ const TRANSLATIONS = {
     teacherLoginTitle: "老師帳號",
     teacherNotSignedIn: "尚未記錄老師資料",
     teacherSignedIn: "已記錄：{name}",
-    googleLogin: "登入老師帳號",
-    googleUnavailable: "請使用網站老師帳號登入。",
+    googleLogin: "使用 Google 登入",
+    googleUnavailable: "Google 登入暫時無法使用，請稍後再試。",
     teacherNameLabel: "老師姓名",
     teacherNamePlaceholder: "例如：王老師",
     teacherEmailLabel: "帳號",
     teacherEmailPlaceholder: "teacher01",
-    googleNote: "老師使用網站帳號登入後，就能保存自己的課程紀錄。",
+    googleNote: "使用 Google 安全登入，並保留自己的課程紀錄。",
     roomCodeLabel: "房間數字密碼",
     roomCodePlaceholder: "例如：2468",
     enterRoom: "進入房間",
@@ -227,13 +227,13 @@ const TRANSLATIONS = {
     teacherLoginTitle: "Teacher account",
     teacherNotSignedIn: "No teacher saved yet",
     teacherSignedIn: "Saved: {name}",
-    googleLogin: "Sign in to teacher account",
-    googleUnavailable: "Please use the website teacher account.",
+    googleLogin: "Continue with Google",
+    googleUnavailable: "Google sign-in is temporarily unavailable. Please try again.",
     teacherNameLabel: "Teacher name",
     teacherNamePlaceholder: "Example: Ms. Wang",
     teacherEmailLabel: "Account",
     teacherEmailPlaceholder: "teacher01",
-    googleNote: "Sign in with a website teacher account to save course history.",
+    googleNote: "Sign in securely with Google and keep your course history.",
     roomCodeLabel: "Numeric room code",
     roomCodePlaceholder: "Example: 2468",
     enterRoom: "Enter room",
@@ -330,13 +330,13 @@ const TRANSLATIONS = {
     teacherLoginTitle: "先生アカウント",
     teacherNotSignedIn: "先生情報は未保存です",
     teacherSignedIn: "保存済み：{name}",
-    googleLogin: "先生アカウントでログイン",
-    googleUnavailable: "サイトの先生アカウントを使用してください。",
+    googleLogin: "Google でログイン",
+    googleUnavailable: "Google ログインは一時的に利用できません。しばらくしてからお試しください。",
     teacherNameLabel: "先生名",
     teacherNamePlaceholder: "例：王先生",
     teacherEmailLabel: "アカウント",
     teacherEmailPlaceholder: "teacher01",
-    googleNote: "サイトの先生アカウントでログインすると授業履歴を保存できます。",
+    googleNote: "Google で安全にログインし、授業履歴を保存できます。",
     roomCodeLabel: "数字のルーム番号",
     roomCodePlaceholder: "例：2468",
     enterRoom: "入室",
@@ -428,13 +428,13 @@ const TRANSLATIONS = {
     teacherLoginTitle: "Tài khoản giáo viên",
     teacherNotSignedIn: "Chưa lưu thông tin giáo viên",
     teacherSignedIn: "Đã lưu: {name}",
-    googleLogin: "Đăng nhập tài khoản giáo viên",
-    googleUnavailable: "Hãy dùng tài khoản giáo viên của trang web.",
+    googleLogin: "Đăng nhập bằng Google",
+    googleUnavailable: "Tạm thời không thể đăng nhập bằng Google. Vui lòng thử lại.",
     teacherNameLabel: "Tên giáo viên",
     teacherNamePlaceholder: "Ví dụ: Cô Wang",
     teacherEmailLabel: "Tài khoản",
     teacherEmailPlaceholder: "teacher01",
-    googleNote: "Đăng nhập bằng tài khoản giáo viên của trang web để lưu lịch sử lớp học.",
+    googleNote: "Đăng nhập an toàn bằng Google và lưu lịch sử lớp học.",
     roomCodeLabel: "Mã phòng bằng số",
     roomCodePlaceholder: "Ví dụ: 2468",
     enterRoom: "Vào phòng",
@@ -1053,6 +1053,7 @@ const teacherUsername = document.querySelector("#teacherUsername");
 const teacherPassword = document.querySelector("#teacherPassword");
 const teacherFields = document.querySelector("#teacherFields");
 const teacherStatusText = document.querySelector("#teacherStatusText");
+const googleTeacherLoginButton = document.querySelector("#googleTeacherLoginButton");
 const teacherLoginButton = document.querySelector("#teacherLoginButton");
 const teacherRegisterButton = document.querySelector("#teacherRegisterButton");
 const teacherResetButton = document.querySelector("#teacherResetButton");
@@ -1779,6 +1780,42 @@ async function continueAfterTeacherAuth(successKey) {
   setRoomUi();
 }
 
+async function teacherFirebaseAuth() {
+  if (!window.classroomFirebase) {
+    roomMessage.textContent = t("googleUnavailable");
+    return;
+  }
+
+  googleTeacherLoginButton.disabled = true;
+  teacherLoginButton.disabled = true;
+  teacherRegisterButton.disabled = true;
+  teacherResetButton.disabled = true;
+  roomMessage.textContent = "";
+
+  try {
+    const firebaseUser = await window.classroomFirebase.signIn();
+    const idToken = await firebaseUser.getIdToken(true);
+    const result = await apiRequest("/api/teacher/firebase-login", {
+      method: "POST",
+      body: JSON.stringify({ idToken }),
+    });
+    localStorage.setItem(TEACHER_TOKEN_KEY, result.token);
+    saveTeacherProfile(result.teacher || {});
+    teacherPassword.value = "";
+    await continueAfterTeacherAuth("loginSuccess");
+  } catch (error) {
+    if (error?.code !== "auth/popup-closed-by-user") {
+      console.error("Firebase teacher sign-in failed", error);
+      roomMessage.textContent = t("loginFailed");
+    }
+  } finally {
+    googleTeacherLoginButton.disabled = false;
+    teacherLoginButton.disabled = false;
+    teacherRegisterButton.disabled = false;
+    teacherResetButton.disabled = false;
+  }
+}
+
 async function teacherAuth(mode) {
   const payload = {
     name: teacherName.value.trim(),
@@ -1876,6 +1913,7 @@ async function resetTeacherPassword() {
 }
 
 function logoutTeacher() {
+  window.classroomFirebase?.signOut().catch(() => {});
   localStorage.removeItem(TEACHER_TOKEN_KEY);
   localStorage.removeItem(TEACHER_KEY);
   localStorage.removeItem(CSRF_TOKEN_KEY);
@@ -3546,6 +3584,7 @@ teacherRoomForm.addEventListener("submit", (event) => {
 });
 teacherLoginButton.addEventListener("click", () => teacherAuth("login"));
 teacherRegisterButton.addEventListener("click", () => teacherAuth("register"));
+googleTeacherLoginButton?.addEventListener("click", teacherFirebaseAuth);
 teacherResetButton.addEventListener("click", resetTeacherPassword);
 teacherLogoutButton.addEventListener("click", logoutTeacher);
 teacherDashboardLogoutButton.addEventListener("click", logoutTeacher);

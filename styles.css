@@ -2177,3 +2177,48 @@ body.board-fullscreen {
     min-height: 220px;
   }
 }
+/* Firebase teacher sign-in */
+.firebase-login-button {
+  width: 100%;
+  margin-top: 0.75rem;
+  background: #ffffff;
+  color: #243148;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 4px 14px rgb(15 23 42 / 8%);
+}
+
+.firebase-login-button::before {
+  content: "G";
+  display: inline-grid;
+  place-items: center;
+  width: 1.45rem;
+  height: 1.45rem;
+  margin-right: 0.55rem;
+  border-radius: 50%;
+  background: conic-gradient(from -45deg, #4285f4 0 25%, #34a853 0 50%, #fbbc05 0 75%, #ea4335 0);
+  color: #fff;
+  font-weight: 800;
+}
+
+.firebase-login-note {
+  margin: 0.6rem 0 0;
+  text-align: center;
+}
+
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1rem 0;
+  color: #94a3b8;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+}
+
+.login-divider::before,
+.login-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #dbe3ec;
+}
