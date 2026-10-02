@@ -3,12 +3,16 @@ services:
     name: classroom-handwriting-board
     env: python
     plan: free
-    buildCommand: python --version
+    buildCommand: pip install -r requirements.txt
     startCommand: python server.py
     envVars:
-      - key: CLASSROOM_DATA_DIR
-        value: /var/data
-    disk:
-      name: classroom-handwriting-data
-      mountPath: /var/data
-      sizeGB: 1
+      - key: CLASSROOM_STORAGE_BACKEND
+        value: firebase
+      - key: FIREBASE_PROJECT_ID
+        value: handwritten-bulletin
+      - key: FIREBASE_IMAGE_BACKEND
+        value: firestore
+      - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: CLASSROOM_SESSION_SECRET
+        generateValue: true

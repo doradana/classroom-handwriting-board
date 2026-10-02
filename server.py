@@ -18,6 +18,8 @@ import time
 import uuid
 from datetime import datetime, timedelta, timezone
 
+from firebase_store import firebase_error, firebase_requested, get_firebase_store
+
 
 ROOT = Path(__file__).resolve().parent
 
@@ -53,6 +55,10 @@ DEFAULT_COURSE_ID = "default"
 DATA_LOCK = threading.RLock()
 FILE_RETRY_DELAYS = (0.03, 0.08, 0.16, 0.32, 0.64)
 FIREBASE_API_KEY = os.environ.get("FIREBASE_API_KEY") or "AIzaSyCmtnC-0L4vKnvlGaHhg4io7sy0dS7sLhY"
+
+
+def firebase_storage():
+    return get_firebase_store() if firebase_requested() else None
 
 
 def ensure_data_root():
@@ -109,6 +115,9 @@ def unlink_file_with_retry(path):
 
 
 def load_deleted_rooms():
+    store = firebase_storage()
+    if store:
+        return store.deleted_room_map()
     try:
         data = json.loads(DELETED_ROOMS_FILE.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
@@ -118,12 +127,28 @@ def load_deleted_rooms():
 
 
 def save_deleted_rooms(rooms):
+    store = firebase_storage()
+    if store:
+        for room_code, payload in rooms.items():
+            store.mark_room_deleted(room_code, payload)
+        return
     ensure_data_root()
     write_json_file(DELETED_ROOMS_FILE, {"rooms": rooms})
 
 
 def mark_room_deleted(room_code, teacher=None):
     if not ROOM_RE.match(str(room_code or "")):
+        return
+    store = firebase_storage()
+    if store:
+        store.mark_room_deleted(
+            str(room_code),
+            {
+                "deletedAt": now_iso(),
+                "teacherId": str((teacher or {}).get("id") or ""),
+                "teacherUsername": str((teacher or {}).get("username") or "").strip().lower(),
+            },
+        )
         return
     with DATA_LOCK:
         rooms = load_deleted_rooms()
@@ -136,11 +161,32 @@ def mark_room_deleted(room_code, teacher=None):
 
 
 def room_is_deleted(room_code):
+    store = firebase_storage()
+    if store:
+        return store.room_is_deleted(room_code)
     return str(room_code or "") in load_deleted_rooms()
 
 
 def migrate_legacy_data():
     if not LEGACY_MIGRATION_ENABLED:
+        return
+    store = firebase_storage()
+    if store:
+        try:
+            teacher_data = json.loads((LEGACY_DATA_ROOT / "teachers.json").read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            teacher_data = {"teachers": []}
+        store.save_teachers(teacher_data)
+        legacy_rooms = LEGACY_DATA_ROOT / "rooms"
+        if legacy_rooms.exists():
+            for legacy_room in legacy_rooms.glob("*.json"):
+                if store.room_is_deleted(legacy_room.stem):
+                    continue
+                try:
+                    data = json.loads(legacy_room.read_text(encoding="utf-8"))
+                except (OSError, json.JSONDecodeError):
+                    continue
+                store.import_room(legacy_room.stem, normalize_room(legacy_room.stem, data))
         return
     if DATA_ROOT.resolve() == LEGACY_DATA_ROOT.resolve() or not LEGACY_DATA_ROOT.exists():
         return
@@ -162,6 +208,16 @@ def migrate_legacy_data():
 
 
 def storage_status():
+    store = firebase_storage()
+    if store:
+        status = store.status()
+        status.update(
+            {
+                "legacyDataPresent": LEGACY_DATA_ROOT.exists(),
+                "legacyMigrationEnabled": LEGACY_MIGRATION_ENABLED,
+            }
+        )
+        return status
     ensure_data_root()
     active_rooms = [path for path in DATA_DIR.glob("*.json") if ROOM_RE.match(path.stem) and not room_is_deleted(path.stem)]
     return {
@@ -172,6 +228,9 @@ def storage_status():
         "legacyMigrationEnabled": LEGACY_MIGRATION_ENABLED,
         "rooms": len(active_rooms),
         "teachersFile": TEACHERS_FILE.exists(),
+        "backend": "json",
+        "firebaseRequested": firebase_requested(),
+        "firebaseError": firebase_error(),
     }
 
 
@@ -192,6 +251,9 @@ def clean_text(value, max_length, fallback=""):
 
 
 def load_teachers():
+    store = firebase_storage()
+    if store:
+        return store.load_teachers()
     try:
         data = json.loads(TEACHERS_FILE.read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError, OSError):
@@ -202,11 +264,21 @@ def load_teachers():
 
 
 def save_teachers(data):
+    store = firebase_storage()
+    if store:
+        store.save_teachers(data)
+        return
     with DATA_LOCK:
         write_json_file(TEACHERS_FILE, data)
 
 
 def session_secret():
+    configured_secret = os.environ.get("CLASSROOM_SESSION_SECRET", "").strip()
+    if len(configured_secret) >= 32:
+        return configured_secret
+    store = firebase_storage()
+    if store:
+        return store.session_secret()
     SESSION_SECRET_FILE.parent.mkdir(parents=True, exist_ok=True)
     if SESSION_SECRET_FILE.exists():
         secret = SESSION_SECRET_FILE.read_text(encoding="utf-8").strip()
@@ -428,8 +500,23 @@ def room_file(room_code):
 
 
 def room_exists(room_code):
+    store = firebase_storage()
+    if store:
+        return bool(ROOM_RE.match(str(room_code or ""))) and store.room_exists(room_code)
     path = room_file(room_code)
     return path is not None and path.exists() and not room_is_deleted(room_code)
+
+
+def room_codes():
+    store = firebase_storage()
+    if store:
+        return [code for code in store.list_room_codes() if ROOM_RE.match(code)]
+    ensure_data_root()
+    return [
+        path.stem
+        for path in DATA_DIR.glob("*.json")
+        if ROOM_RE.match(path.stem) and not room_is_deleted(path.stem)
+    ]
 
 
 def generate_room_code():
@@ -542,6 +629,17 @@ def ensure_unique_course_codes(room_code, room):
 
 
 def load_room(room_code):
+    store = firebase_storage()
+    if store:
+        data = store.load_room(room_code)
+        if data is None:
+            room = default_room(room_code)
+            ensure_unique_course_codes(room_code, room)
+            return room
+        room = normalize_room(room_code, data)
+        if ensure_unique_course_codes(room_code, room):
+            save_room(room_code, room)
+        return room
     path = room_file(room_code)
     if path is None or not path.exists():
         room = default_room(room_code)
@@ -558,6 +656,9 @@ def load_room(room_code):
 
 
 def load_room_raw(room_code):
+    store = firebase_storage()
+    if store:
+        return store.load_room(room_code) or {}
     path = room_file(room_code)
     if path is None or not path.exists():
         return {}
@@ -569,6 +670,10 @@ def load_room_raw(room_code):
 
 
 def save_room(room_code, room):
+    store = firebase_storage()
+    if store:
+        store.save_room_metadata(room_code, room)
+        return
     path = room_file(room_code)
     if path is None:
         raise ValueError("Invalid room code")
@@ -577,9 +682,9 @@ def save_room(room_code, room):
 
 
 def rotate_room_code(room_code):
-    old_path = room_file(room_code)
-    if old_path is None or not old_path.exists():
+    if not room_exists(room_code):
         return None
+    old_path = room_file(room_code)
     new_code = generate_room_code()
     room = load_room(room_code)
     history = room.get("passwordHistory")
@@ -589,8 +694,12 @@ def rotate_room_code(room_code):
     room["passwordHistory"] = history[-20:]
     room["room"] = new_code
     room["lastRotatedAt"] = now_iso()
-    save_room(new_code, room)
-    unlink_file_with_retry(old_path)
+    store = firebase_storage()
+    if store:
+        store.rename_room(room_code, new_code, room)
+    else:
+        save_room(new_code, room)
+        unlink_file_with_retry(old_path)
     return room
 
 
@@ -653,9 +762,9 @@ def sanitize_post(post):
     if not isinstance(post, dict):
         return None
     image = str(post.get("image", ""))
-    if not valid_png_data_url(image):
+    if not valid_post_image(image):
         image = ""
-    return {
+    clean = {
         "id": clean_text(post.get("id"), 80) or uuid.uuid4().hex,
         "name": clean_text(post.get("name"), 18),
         "prompt": clean_text(post.get("prompt"), 32, "中文手寫練習"),
@@ -663,6 +772,10 @@ def sanitize_post(post):
         "courseId": clean_text(post.get("courseId"), 64),
         "createdAt": clean_text(post.get("createdAt"), 40, now_iso()),
     }
+    image_path = clean_text(post.get("imagePath"), 512)
+    if image_path:
+        clean["imagePath"] = image_path
+    return clean
 
 
 def sanitize_posts(posts):
@@ -689,6 +802,20 @@ def valid_png_data_url(value):
     except (ValueError, binascii.Error):
         return False
     return raw.startswith(b"\x89PNG\r\n\x1a\n")
+
+
+def valid_post_image(value):
+    if valid_png_data_url(value):
+        return True
+    try:
+        parsed = urlparse(str(value or ""))
+    except ValueError:
+        return False
+    return (
+        parsed.scheme == "https"
+        and parsed.hostname == "firebasestorage.googleapis.com"
+        and parsed.path.startswith("/v0/b/")
+    )
 
 
 def read_json(handler):
@@ -892,12 +1019,8 @@ def relink_room_teacher(room_code, room, teacher):
 
 
 def teacher_history(teacher):
-    ensure_data_root()
     rooms = []
-    for path in DATA_DIR.glob("*.json"):
-        room_code = path.stem
-        if not ROOM_RE.match(room_code) or room_is_deleted(room_code):
-            continue
+    for room_code in room_codes():
         room = load_room(room_code)
         if not room_belongs_to_teacher(room, teacher):
             continue
@@ -931,11 +1054,18 @@ def find_course_by_code(course_code):
     course_code = sanitize_course_code(course_code)
     if not course_code:
         return None, None
-    ensure_data_root()
-    for path in DATA_DIR.glob("*.json"):
-        room_code = path.stem
-        if not ROOM_RE.match(room_code) or room_is_deleted(room_code):
-            continue
+    store = firebase_storage()
+    if store:
+        location = store.course_location(course_code)
+        if not location:
+            return None, None
+        room = load_room(str(location.get("room") or ""))
+        course = next(
+            (item for item in room.get("courses", []) if item.get("id") == location.get("courseId")),
+            None,
+        )
+        return (room, course) if course else (None, None)
+    for room_code in room_codes():
         room = load_room(room_code)
         for course in room.get("courses", []):
             if sanitize_course_code(course.get("code")) == course_code:
@@ -947,11 +1077,16 @@ def course_code_in_use(course_code, allow_room_code=None, allow_course_id=None):
     course_code = sanitize_course_code(course_code)
     if not course_code:
         return False
-    ensure_data_root()
-    for path in DATA_DIR.glob("*.json"):
-        room_code = path.stem
-        if not ROOM_RE.match(room_code) or room_is_deleted(room_code):
-            continue
+    store = firebase_storage()
+    if store:
+        location = store.course_location(course_code)
+        if not location:
+            return False
+        return not (
+            str(location.get("room") or "") == str(allow_room_code or "")
+            and str(location.get("courseId") or "") == str(allow_course_id or "")
+        )
+    for room_code in room_codes():
         data = load_room_raw(room_code)
         courses = data.get("courses", [])
         if not isinstance(courses, list):
@@ -1054,7 +1189,7 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Teacher-Token, X-Course-Code, X-CSRF-Token")
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "same-origin")
-        self.send_header("Content-Security-Policy", "default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://lh3.googleusercontent.com; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com; frame-src https://handwritten-bulletin.firebaseapp.com https://accounts.google.com https://apis.google.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
+        self.send_header("Content-Security-Policy", "default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://lh3.googleusercontent.com https://firebasestorage.googleapis.com; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com; frame-src https://handwritten-bulletin.firebaseapp.com https://accounts.google.com https://apis.google.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
         if not urlparse(self.path).path.startswith("/api/"):
             self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
             self.send_header("Pragma", "no-cache")
@@ -1335,6 +1470,36 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
             json_response(self, 400, {"error": "Missing name or handwriting image"})
             return
 
+        store = firebase_storage()
+        if store:
+            room = load_room(room_code)
+            if course_id not in room["postsByCourse"]:
+                json_response(self, 404, {"error": "Course not found"})
+                return
+            if not course_matches_code(room, course_id, request_course_code(self, payload=payload)):
+                json_response(self, 403, {"error": "Invalid course code"})
+                return
+            store.add_post(
+                room_code,
+                course_id,
+                {
+                    "id": str(uuid.uuid4()),
+                    "name": name,
+                    "prompt": prompt,
+                    "image": image,
+                    "courseId": course_id,
+                    "createdAt": now_iso(),
+                },
+            )
+            room = load_room(room_code)
+            own_posts = [
+                post
+                for post in room["postsByCourse"].get(course_id, [])
+                if str(post.get("name", "")).strip() == name
+            ]
+            json_response(self, 200, sanitize_posts(own_posts))
+            return
+
         with DATA_LOCK:
             room = load_room(room_code)
             if course_id not in room["postsByCourse"]:
@@ -1408,11 +1573,16 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
             if not teacher:
                 return
             mark_room_deleted(room_code, teacher)
-            file_removed = True
-            try:
-                unlink_file_with_retry(room_file(room_code))
-            except OSError:
-                file_removed = False
+            store = firebase_storage()
+            if store:
+                store.delete_room(room_code)
+                file_removed = True
+            else:
+                file_removed = True
+                try:
+                    unlink_file_with_retry(room_file(room_code))
+                except OSError:
+                    file_removed = False
             json_response(self, 200, {"deleted": True, "room": room_code, "fileRemoved": file_removed})
             return
 
@@ -1424,6 +1594,14 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
                 return
             if course_id not in room["postsByCourse"]:
                 json_response(self, 404, {"error": "Course not found"})
+                return
+            store = firebase_storage()
+            if store:
+                if not store.delete_post(room_code, post_id):
+                    json_response(self, 404, {"error": "Post not found"})
+                    return
+                room = load_room(room_code)
+                json_response(self, 200, sanitize_posts(room["postsByCourse"].get(course_id, [])))
                 return
             before = len(room["postsByCourse"][course_id])
             room["postsByCourse"][course_id] = [
@@ -1462,6 +1640,9 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
             room["activeCourseId"] = active_course_id
             room["postsByCourse"].setdefault(active_course_id, [])
             save_room(room_code, room)
+            store = firebase_storage()
+            if store:
+                store.clear_course_posts(room_code, course_id)
             json_response(
                 self,
                 200,
@@ -1486,6 +1667,11 @@ class ClassroomHandler(SimpleHTTPRequestHandler):
         if course_id not in room["postsByCourse"]:
             json_response(self, 404, {"error": "Course not found"})
             return
+        store = firebase_storage()
+        if store:
+            store.clear_course_posts(room_code, course_id)
+            json_response(self, 200, [])
+            return
         room["postsByCourse"][course_id] = []
         save_room(room_code, room)
         json_response(self, 200, [])
@@ -1497,6 +1683,8 @@ class ClassroomHTTPServer(ThreadingHTTPServer):
 
 
 def main():
+    if firebase_requested():
+        firebase_storage().status()
     migrate_legacy_data()
     log_path = ROOT / "server-runtime.log"
     sys.stdout = open(log_path, "a", encoding="utf-8", buffering=1)

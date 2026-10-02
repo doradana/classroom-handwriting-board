@@ -1,6 +1,8 @@
 __pycache__/
-*.py[cod]
 data/
-server-runtime.log
-server.out.log
-server.err.log
+tmp-*/
+*.log
+*.zip
+.env
+*service-account*.json
+firebase-adminsdk*.json
